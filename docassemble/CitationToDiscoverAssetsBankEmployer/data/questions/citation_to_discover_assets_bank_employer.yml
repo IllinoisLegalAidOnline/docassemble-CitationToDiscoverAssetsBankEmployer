@@ -1,0 +1,1243 @@
+metadata:
+  title: Citation to Discover Assets to Bank or Employer
+  short title: Citation to Discover Assets 
+  comment: This program helps you make forms to collect on a money judgment from a debtor's bank or employe
+  authors:
+    - Vivian McNaughton
+---
+include:
+  - docassemble.AssemblyLine:assembly_line.yml
+  - docassemble.ILAO:ilao-interview-framework.yml
+  - docassemble.ILAO:shared-basic-questions.yml
+---
+objects:
+  - users: ALPeopleList.using(there_are_any=True, complete_attribute=['complete'])
+  - other_parties: ALPeopleList.using(there_are_any=True, complete_attribute=['complete'])
+  - bank: ALIndividual
+  - employer: ALIndividual
+  - agent: ALIndividual
+  - court_list: ALCourtLoader.using(file_name='docassemble.ILAO:data/sources/il_courts.xlsx')
+---
+code: |
+  ilao_easy_form_title = "Citation to Discover Assets to Bank or Employer"
+  ilao_easy_form_url = "https://www.illinoislegalaid.org/legal-information/collect-judgment-debtors-bank-or-employer"
+  github_user = 'IllinoisLegalAidOnline'
+  github_repo_name = 'docassemble-CitationToDiscoverAssetsBankEmployer'
+  allowed_courts = ['Circuit']
+  al_form_type = 'existing_case'
+  form_name = "Citation to Discover Assets to Bank or Employer"
+---
+# Road map
+sections:
+  - section_intro: Start
+  - section_judgment: Judgment
+  - section_case: Case details
+  - section_debtor: Debtor, bank, and employer
+  - section_user: About you
+  - section_download: Download  
+---
+#interview code block
+mandatory: True
+code: |
+  nav.set_section('section_intro')
+  sees_nav_bar
+  snapshot_start
+  how_to_use
+  set_progress(5)
+  accept_terms
+  about_citation
+
+  nav.set_section('section_judgment')
+  other_parties[0].name.first
+  if today().minus(years=7) > judgment_date:
+    if not been_revived:
+      cant_collect_kickout
+    else:
+      if judgment_date > as_datetime('12/31/2019'):
+        if renewal_date > judgment_date.plus(years=10):
+          if is_consumer_debt:
+            consumer_debt_kickout 
+  set_progress(20)
+  if judgment_date > today().minus(days=30):
+    wait_note
+  judgment_amount
+  amount_still_owed
+  party_label
+  users.gather()
+  other_parties.gather()
+  if trial_court_index == -1:
+    cook_district
+  courthouse_info
+  case_number
+
+  nav.set_section('section_debtor')
+  
+  if collection_source["Bank"]:
+    bank.name.first
+    if bank.in_illinois:
+      bank.address.address
+      other_parties[0].ssn
+    elif collection_source["Employer"]:
+      out_of_state_bank_note
+    else:
+      out_of_state_bank_kickout
+  
+  if collection_source["Employer"]:
+    employer.name.first
+    if employer.in_illinois:
+      employer.address.address
+      employer.service
+    elif collection_source["Bank"]:
+      out_of_state_employer_note
+    else:
+      out_of_state_employer_kickout
+
+  hearing_date
+
+  nav.set_section('section_user')
+  users[0].name.first
+  users[0].address.address
+  users[0].has_email_address
+  e_signature
+  
+  nav.set_section('section_download')
+  forms_assembling
+  snapshot_forms
+  get_docs_screen
+  
+---
+#users gather loop
+code: |
+  users[i].name.first
+  users[i].complete = True
+---
+#other parties gather loop
+code: |
+  other_parties[i].name.first
+  other_parties[i].complete = True
+---
+code: |
+  stuff_to_snapshot = {
+  	'start_time': str(current_datetime().format_datetime()),
+  	'started_interview': True, 
+  	}
+
+  try:
+    stuff_to_snapshot['ip_address'] = device(ip=True)
+  except:
+    pass
+
+  stuff_to_snapshot['zip'] = showifdef('users[0].address.zip')
+
+  stuff_to_snapshot['downloaded_forms'] = showifdef('forms_assembling')
+  
+  store_variables_snapshot(
+  	data=stuff_to_snapshot, persistent=True
+  	)
+  snapshot_interview_state = True
+---
+code: |
+  snapshot_interview_state
+  snapshot_start = True  
+---
+code: |
+  reconsider('snapshot_interview_state')
+  snapshot_forms = True
+---
+id: welcome
+question: |
+  Citation to discover assets to a debtor's bank or employer
+subquestion: |
+  Welcome to Illinois Legal Aid Online's **Citation to discover assets to a debtor's bank or employer** Easy Form.
+
+  This program helps you make forms to collect a money you won in a court judgment.
+
+  A Citation to Discover Assets to a Debtor's Bank will require a debtor's bank to give you information about the debtor's income and property. A Citation to Discover Assets to a Debtor's EmployerYou can then try to get that property or income to pay the judgment if it is not protected by law.
+
+  Learn more about [**finding out about a debtor's money, property, and income*](https://www.illinoislegalaid.org/legal-information/finding-out-about-debtors-money-property-and-income).
+field: sees_nav_bar
+---
+id: instructions
+continue button field: how_to_use
+question: |
+  Instructions
+subquestion: |
+  To use this program you will need to know the:
+
+  * Case number,
+  * Courthouse address if court hearing is in person,
+  * Circuit clerk phone, website, and remote hearing instructions if court hearing is remote, 
+  * Name and address of the debtor,
+  * Date of judgment or the date it was renewed (revived),
+  * Amount of judgment, and
+  * Amount that remains unpaid.
+
+  Set aside 10 to 15 minutes to finish this program. You can log in and save your work to return to later. 
+
+  ${ collapse_template(help_example) }  
+
+  Click on **{green words}** to learn what they mean. Some pages have a question mark in a circle ${ fa_icon("question-circle", color_css="#0dcaf0" ) } that helps explain things.
+---
+template: help_example
+subject: |
+  **You can click sections like this to show more information.**
+content: |  
+  This is an example of help. Click again to hide.
+---
+id: about citation
+continue button field: about_citation
+question: |
+  About the citations
+subquestion: |
+  A *Citation to discover assets to debtor's bank* tells the debtor's bank to answer questions about the debtor's property and income. A *Citation to discover assets to debtor's employer* tells the debtor's employer to answer questions about the debtor's wages.  After the bank or employer answers your questions, the court may order bank garnishment or wage garnishment.
+
+  This citation does not apply to the debtor. If you want the debtor to answer questions about their property and income, you can use ILAO's [**Citation to discover assets to debtor Easy Form**](https://www.illinoislegalaid.org/legal-information/citation-discover-assets-debtor)
+  
+  You will need to serve the bank or employer with the citation. You can use a sheriff or private process server to do this. To learn more, read ILAO's article about [**serving a summons**](https://www.illinoislegalaid.org/legal-information/serving-summons).
+---
+sets:
+  - other_parties[i].name.first
+id: other parties name
+question: |
+  % if i == 0:
+  What is the debtor's name?
+  % else:
+  Who was the ${ordinal(i)} ${opposing_party} in the case? 
+  % endif
+subquestion: |
+  % if i == 0:
+  The **debtor** is the person or business that owes you money. Their name will be on the court papers from the case where the judge ruled they owe you money.
+
+  A business and its owner may have both been parties in the original case. You should enter which of the two the court ordered to pay you. If the judgment does not say which one should pay you, you may need to get a new copy from the court.
+
+  % else: 
+  This program will only make a citation for ${other_parties[0].name_full()}. If the ${ordinal(i)} ${opposing_party} also owes you money, you will need to make a separate citation for them.
+  % endif
+fields:
+  - code: |
+      other_parties[i].name_fields(person_or_business='unsure')
+---
+id: judgment date
+question: |
+  When was the judgment date?
+subquestion: |
+  This is the date the court ruled the other party owed you money.
+
+  You can collect a money judgment that is less than 7 years old. If your money judgment is over 7 years old, you can collect it if the judgment was **[renewed]**.
+
+  If your money judgment was issued after Jan 1, 2020, it can be renewed within 10 years of the judgment date. If it was issued before Jan 1, 2020, it can be renewed within 20 years of the judgment date. Learn more about [**how long a judgment lasts**](https://www.illinoislegalaid.org/legal-information/how-long-does-judgment-last).
+fields:
+  - Judgment date: judgment_date
+    datatype: ThreePartsDate
+    alMax: ${ today().format("yyyy-MM-dd") }
+    alMin: ${ today().minus(years=27) }
+terms: 
+  - renewed: |
+      A money judgment is **renewed** or revived if the you filed a petition to revive judgment and the court agreed to revive it. 
+---
+id: been revived date
+question: |
+  Has the judgment been renewed?
+subquestion: |
+  A money judgment is **renewed** or revived if the you filed a petition to revive judgment and the court agreed to revive it. 
+fields:
+  - no label: been_revived
+    datatype: yesnoradio
+  - When was the judgment renewed?: renewal_date
+    datatype: ThreePartsDate
+    alMax: |
+      % if judgment_date > "12/31/2019":
+      % if judgment_date.plus(years=10) > today():
+      ${ today().format("yyyy-MM-dd") }
+      % else:
+      ${ judgment_date.plus(years=10) }
+      % endif
+      % else:
+      % if judgment_date.plus(years=20) > today():
+      ${ today().format("yyyy-MM-dd") }
+      % else:
+      ${ judgment_date.plus(years=20) }
+      % endif
+      % endif
+    alMin: ${judgment_date}
+---
+id: cant collect kickout
+event: cant_collect_kickout
+question: |
+  Sorry
+subquestion: |
+  % if (judgment_date > as_datetime('12/31/2019')) and (today().minus(years=10) > judgment_date):
+  You may not be able to enforce the judgment, as more than 10 years have passed since ${judgment_date}. 
+  % elif (judgment_date > as_datetime('12/31/2019')) and (judgment_date >= today().minus(years=10)):
+  More than seven years have passed since ${judgment_date}. You have until ${judgment_date.plus(years=10)} to revive the judgment.  Check with your local circuit clerk's office to get a Petition to Revive.
+  % elif (as_datetime('01/01/2020') > judgment_date) and (today().minus(years=20) > judgment_date):
+  You may not be able to enforce the judgment, as more than 20 years have passed since ${judgment_date}. 
+  % elif (as_datetime('01/01/2020') > judgment_date) and (judgment_date >= today().minus(years=20)):
+  More than seven years have passed since ${judgment_date}. You have until ${judgment_date.plus(years=20)} to revive the judgment.  Check with your local circuit clerk's office to get a Petition to Revive.
+  % endif
+
+  To learn more, read ILAO's article about [**how long a judgment lasts**](https://www.illinoislegalaid.org/legal-information/how-long-does-judgment-last).
+
+  Click **Back** if you made a mistake. Or you can talk with a lawyer to discuss your options. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
+buttons:
+  - Exit: exit
+  - Restart: restart
+---
+id: is consumer debt
+question: |
+  Was the ${judgment_date} judgment a consumer debt judgment?
+subquestion: |
+  Consumer debt is debt taken out for personal, family, or household purposes. 
+  
+  A consumer debt judgment is a judgment from a court case about consumer debt.
+
+  ${collapse_template(about_consumer_debt)}
+fields:
+  - no label: is_consumer_debt
+    datatype: yesnoradio
+---
+id: consumer debt kickout
+event: consumer_debt_kickout
+question: |
+  Sorry
+subquestion: |
+   A consumer debt judgment entered after Jan 1, 2020, can only be renewed within 10 years of the judgment date.
+
+   Click **Back** if you made a mistake. Or you can talk with a lawyer to discuss your options. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
+buttons:
+  - Exit: exit
+  - Restart: restart
+---
+template: about_consumer_debt
+subject: |
+  **Examples of consumer debt**
+content: |
+  A wide variety of debt counts as consumer debt. If your ${judgment_date} judgment was against a person, not a company, it may be a consumer debt judgment. 
+
+  Someone owes you a consumer debt if you lent them money to:
+
+  * Buy something for themself, their family, or their house, or
+  * Fix something for themself, their family, or their house.
+  
+  If the ${judgment_date} judgment came from a case regarding a debt like that, you may need to click **Yes** here.
+---
+id: wait note
+continue button field: wait_note
+question: |
+  Waiting 30 days
+subquestion: |
+  If you can, wait at least 30 days after your judgment to file your citation.
+
+  It becomes difficult for the debtor to challenge your judgment after 30 days.
+---
+id: judgment amount
+question: |
+  Details about the amount ${other_parties[0].name_full()} still owes you
+subquestion: |
+  This information is used to figure out how much money you are still owed. This includes the original judgment amount, court costs, interest on the judgment amount, and how much ${other_parties[0].name_full()} has already paid you.
+  
+  % if (judgment_date > as_datetime('12/31/2019')):
+  For judgments entered after 2019, the simple interest rate on the unpaid amount can vary. If the judgment is a **{consumer debt judgment}** of $25,000 or less, the simple interest rate is 5% per year. Otherwise, the simple interest rate is 9% per year. 
+  
+  Figuring out how much interest you are owed can be complicated by how much time has passed and if ${other_parties[0].name_full()} has paid you part of the judgment. If you do not know how much interest you are owed, you may want to talk with a lawyer. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
+
+  % else:
+  For judgments entered before 2020, the simple interest rate on the unpaid amount is 9% per year. Figuring out how much interest you are owed can be complicated by how much time has passed and if ${other_parties[0].name_full()} has paid you part of the judgment. If you do not know how much interest you are owed, you may want to talk with a lawyer. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
+  
+  % endif
+  ${collapse_template(calculating_interest)}
+fields:
+  - Judgment amount: judgment_amount
+    datatype: currency
+    step: 0.01
+    help: |
+      This is the amount that ${other_parties[0].name_full()} was ordered to pay you in the ${judgment_date} judgment.
+  - Your court costs: court_costs
+    required: False
+    step: 0.01
+    datatype: currency
+    help: |
+      These are costs such as filing fees and lawyers' fees. You should only include costs the court ordered ${other_parties[0].name_full()} to pay. If the court did not order ${other_parties[0].name_full()} to cover your court costs, you should leave this at zero.
+  - Interest: interest_amount
+    required: False
+    datatype: currency
+    step: 0.01
+    help: |
+      % if (judgment_date > as_datetime('12/31/2019')):
+      The rate for post-judgment simple interest is either 5% per year or 9% per year on the unpaid amount of the judgment. The rate is 5% for consumer debt judgments for $25,000 or less, and 9% for other judgments. This program does not calculate how much interest you are owed.
+      % else:
+      The rate for post-judgment simple interest is 9% per year on the unpaid amount of the judgment. This program does not calculate how much interest you are owed.
+      % endif
+  - Amount already paid: already_paid_amount
+    required: False
+    datatype: currency
+    step: 0.01
+    help: |
+      This is the total amount of money ${other_parties[0].name_full()} has already paid you. If ${other_parties[0].name_full()} has not paid any of the judgment, you should leave this at zero.
+
+---
+template: calculating_interest
+subject: |
+  **Example of calculating interest**
+content: |
+  % if (judgment_date > as_datetime('12/31/2019')):
+  The interest rate is calculated as simple interest on the unpaid amount.
+  
+  Imagine you had a judgment of $1,000 two years ago, and it was not for consumer debt, the simple interest rate would be 9%. You would multiply $1,000 x 9% to get $90 for each year. That would bring the total to $1,180. That’s the amount you can ask for in your citation.
+  % else:
+  The 9% interest rate is calculated as simple interest on the unpaid amount.
+
+  If you had a judgment of $1,000 two years ago, and it was not for consumer debt, the simple interest rate would be 9%. You would multiply $1,000 x 9% to get $90 for each year. That would bring the total to $1,180. That’s the amount you can ask for in your citation.
+  % endif
+---
+depends on:
+  - already_paid_amount
+  - interest_amount
+  - court_costs
+  - judgment_amount
+code: |
+  amount_still_owed_default = (judgment_amount + court_costs + interest_amount) - already_paid_amount
+---
+id: calculated amount still owed
+question: |
+  How much does ${other_parties[0].name_full()} still owe you?
+subquestion: |
+  According to your previous answers, ${other_parties[0].name_full()} still owes you ${currency(amount_still_owed_default)}. If that amount is correct, you can click **Next**. If it seems wrong, you can edit the amount owed.
+
+  ${collapse_template(owed_example)}
+fields:
+  - Amount still owed: amount_still_owed
+    datatype: currency
+    step: 0.01
+    default: ${amount_still_owed_default}
+---
+template: owed_example
+subject: |
+  **Example of an amount still owed**
+content: |
+  If the original judgment said ${other_parties[0].name_full()} owed you $1,000 plus court costs, here's how the amount still owed could be calculated:
+
+  * Original judgment: $1,000
+  * Court costs: $90
+  * Interest on judgment: $90 (9% of $1,000)
+  
+  The total amount owed would be $1,000 plus $90 plus $90, which is $1,180.
+
+  If ${other_parties[0].name_full()} had already paid you $300 for that judgment, you would subtract that from the total amount owed. The amount still owed would be $1,180 minus $300, which is $880.
+---
+id: party label
+question: |
+  What was your role in the case?
+subquestion: |
+  ${ collapse_template(which_party) }  
+field: party_label
+choices:
+  - Plaintiff: plaintiff
+  - Petitioner: petitioner
+  - Defendant: defendant
+  - Respondent: respondent
+validation code: |
+  if party_label == "plaintiff":
+    opposing_party = "defendant"
+  elif party_label == "petitioner":
+    opposing_party = "respondent"
+  elif party_label == "defendant":
+    opposing_party = "plaintiff"
+  elif party_label == "respondent":
+    opposing_party = "petitioner"
+---
+template: which_party
+subject: |
+  **Learn more about roles and party labels**
+content: |
+  If you filed the original case, you are either the Plaintiff or the Petitioner.
+
+  If someone filed the original case against you, you are either the Defendant or the Respondent.
+
+  The other court forms in the case should help you figure it out. Look at the top (the caption) of the Petition, Complaint, or Order. That form should have a label by your name.
+---
+sets:
+  - users[i].name.first
+id: users names
+question: |
+  % if i == 0:
+  What is your name?
+  % else:
+  What is the name of the ${ ordinal(i) } ${party_label}?
+  % endif
+subquestion: |
+  % if i != 0:
+  ${ collapse_template(long_name_help) }
+  % endif
+fields:
+  - code: |
+        users[i].name_fields(person_or_business='unsure')
+---
+sets:
+  - users[0].name.first
+id: user zero name
+question: |
+  What is your name?
+fields:
+  - code: |
+      users[0].name_fields()
+---
+template: long_name_help
+subject: |
+  **What if I need more space?**
+content: |
+  If the person has a long name like "Jane Smith, Director of Housing," select **Business or organization**. You can then enter the full name and title.
+---
+id: any other users
+question: |
+    Was anyone else on your side of the case?
+subquestion: |
+  % if len(users.elements) > 1:  
+  So far you have told us about ${users.full_names()}.
+  % else:
+  If there are other ${party_label}s besides you, click **Yes**.
+  % endif
+fields:
+  - no label: users.there_is_another
+    datatype: yesnoradio
+---
+sets:
+  - other_parties[i].name.first
+id: other parties name
+question: |
+  % if i == 0:
+  What is the debtor's name?
+  % else:
+  Who was the ${ordinal(i)} ${opposing_party} in the case? 
+  % endif
+subquestion: |
+  % if i == 0:
+  The **debtor** is the person or business that owes you money. Their name will be on the court papers from the case where the judge ruled they owe you money.
+
+  A business and its owner may have both been parties in the original case. You should enter which of the two the court ordered to pay you. If the judgment does not say which one should pay you, you may need to get a new copy from the court.
+
+  % else: 
+  This program will only make a citation for ${other_parties[0].name_full()}. If the ${ordinal(i)} ${opposing_party} also owes you money, you will need to make a separate citation for them.
+  % endif
+fields:
+  - code: |
+      other_parties[i].name_fields(person_or_business='unsure')
+---
+id: other parties there is another
+question: |
+  Are there any other ${opposing_party}s in this case?
+subquestion: |
+  % if len(other_parties.elements) >= 1:  
+  So far you have told us about ${other_parties.full_names()}.
+  % endif
+fields:
+  - no label: other_parties.there_is_another
+    datatype: yesnoradio
+---
+id: county
+continue button field: county
+question: |
+  In which county was the court case filed?
+subquestion: |
+  The county should be listed near the top of the court papers.
+fields:
+  - County: trial_court_index
+    datatype: integer
+    code: |
+      court_county_lookup()
+---
+id: Cook County district
+question: |
+  In which Cook County courthouse was the court case filed?
+subquestion: |
+  ${ collapse_template(cook_district_help) }  
+field: cook_district
+choices:
+  - First Municipal District, Daley Center, 50 W. Washington Street, Chicago: 15
+  - Second Municipal District, 5600 Old Orchard Road, Skokie: 16
+  - Third Municipal District, 2121 Euclid Avenue, Rolling Meadows: 17
+  - Fourth Municipal District, 1500 Maybrook Drive, Maywood: 18
+  - Fifth Municipal District, 10220 S. 76th Avenue, Bridgeview: 19
+  - Sixth Municipal District, 16501 South Kedzie Parkway, Markham: 20
+---
+template: cook_district_help
+subject: |
+  **What if I am not sure?**
+content: |  
+  Visit **[Illinois Court Help](https://www.ilcourthelp.gov/)**, or you can call or text (833) 411-1121 for assistance.
+---
+code: |
+  def court_county_lookup(lowercase=False):
+    all_court_counties = court_list._load_courts()['address_county'].items()
+    filtered_courts = [(-1, "cook")] if lowercase else [(-1, "Cook")]
+    for court in all_court_counties:
+      if court[1] != "Cook":
+        court_name = court[1].lower() if lowercase else court[1]
+        filtered_courts.append((court[0],court_name))
+    return sorted( filtered_courts, key=lambda y: y[1])
+---
+depends on:
+  - trial_court_index
+  - cook_district
+code: |
+  if trial_court_index == -1:
+    trial_court = court_list.as_court('trial_court', cook_district)
+  else:
+    trial_court = court_list.as_court('trial_court', trial_court_index)
+    
+  court_name = str(trial_court.name)
+  court_street_address = str(trial_court.address.address)
+  court_full_street = str(trial_court.address.line_one(bare=True))
+  court_city = str(trial_court.address.city)
+  court_state = str(trial_court.address.state)
+  court_zip = str(trial_court.address.zip)
+  court_csz = str(trial_court.address.line_two())
+  courthouse_info = court_name + ", " + court_street_address + ", " + court_city + ", " + court_state + " " + court_zip
+---
+template: county_lookup_help
+subject: |
+  **How do I look up the county?**
+content: |  
+  You can use this [**City-to-County Finder**](https://www.statsamerica.org/CityCountyFinder/) to find the county.
+---
+id: case number
+question: |
+  What is the court case number?
+subquestion: |
+  The case number is in the caption near the top of the first page of the court forms.
+fields:
+  - Case number: case_number
+---
+id: collection source
+question: |
+  Do you want to collect from ${other_parties[0].name_full()}'s bank or employer?
+fields:
+  - I want to collect from their: collection_source
+    datatype: checkboxes
+    all of the above: True
+    choices:
+      - Bank
+      - Employer
+---
+id: bank name
+question: |
+  What is the name of ${other_parties[0].name_full()}'s bank?
+subquestion: |
+  If you want to collect from more than one bank, you will need to file a separate citation for each bank. You can use this program again to make additional citations.
+fields:
+  - Bank name: bank.name.first
+---
+id: bank in illinois
+question: |
+  Does ${bank.name.first} do business in Illinois?
+subquestion: |
+  A bank does business in Illinois if it has:
+
+  * A main office or branch office in Illinois,
+  * ATMs or cash machines in Illinois,
+  * A corporate headquarters in Illinois, or
+  * Customers who live in Illinois.
+fields:
+  - no label: bank.in_illinois
+    datatype: yesnoradio
+---
+id: out of state bank kickout
+event: out_of_state_bank_kickout
+question: |
+ Sorry
+subquestion: |
+  You can only use this program to make a citation for a bank that does business in Illinois.
+
+  Click **Back** if you made a mistake. Or you can talk with a lawyer to discuss your options. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
+---
+id: out of state bank note
+continue button field: out_of_state_bank_note
+question: |
+  Sorry
+subquestion: |
+  You can only use this program to make a citation for a bank that does business in Illinois. You can talk with a lawyer to discuss your options. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
+
+  Click **Back** if you made a mistake. Click **Next** if you would like to just make a citation for an employer.
+---
+id: bank address
+question: |
+  Where will you serve the forms to ${bank.name.first}?
+subquestion: |
+  After you file your forms with the court, you will need a sheriff or process server to serve them to:
+
+  * An officer at any of ${bank.name.first}'s branch offices, or
+  * A registered agent of ${bank.name.first}
+
+   You can search online to find the address of a branch office, or you can use the [Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch) to look up ${bank.name.first}'s registered agent.
+fields:
+  - Street address: bank.address.address
+    address autocomplete: True
+  - Address line 2: bank.address.unit
+    required: False
+  - City: bank.address.city
+  - State: bank.address.state
+    code: |
+      states_list()
+  - ZIP code: bank.address.zip
+---
+id: debtor ssn
+question: |
+  What are the last 4 digits of ${other_parties[0].name_full()}'s Social Security Number?
+subquestion: |
+  If you do not know, you can leave this blank.
+fields:
+  - SSN: other_parties[0].ssn
+    required: False
+    maxlength: 4
+---
+id: employer name
+question: |
+  What is the name of ${other_parties[0].name_full()}'s employer?
+subquestion: |
+  If you want to collect from more than one employer, you will need to file a separate citation for each employer. You can use this program again to make additional citations.
+fields:
+  - code: |
+      employer.name_fields(person_or_business='unsure')
+---
+id: employer in illinois
+question: |
+  Does ${employer.name_full()} do business in Illinois?
+subquestion: |
+  A company or employer does business in Illinois if it has:
+  
+  * An office, store, or headquarters in Illinois,
+  * A factory, warehouse, or other facility in Illinois, or
+  * Customers who live in Illinois.
+fields:
+  - no label: employer.in_illinois
+    datatype: yesnoradio
+---
+id: out of state employer kickout
+event: out_of_state_employer_kickout
+question: |
+  Sorry
+subquestion: |
+  You can only use this program to make a citation for an employer that does business in Illinois.
+
+  Click **Back** if you made a mistake. Or you can talk with a lawyer to discuss your options. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
+buttons:
+  - Exit: exit
+  - Restart: restart
+---
+id: out of state employer note
+continue button field: out_of_state_employer_note
+question: |
+  Sorry
+subquestion: |
+  You can only use this program to make a citation for an employer that does business in Illinois. Or you can talk with a lawyer to discuss your options. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
+
+  Click **Back** if you made a mistake. Click **Next** if you would like to just make a citation for a bank.
+---
+id: employer address
+question: |
+  What is ${employer.name_full()}'s address?
+subquestion: |
+  You can search online for ${employer.name_full()}'s address. If you have their phone number, you can call them and ask for their mailing address.
+
+  Some companies may have their address listed on the [Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch).
+fields:
+  - Street address: employer.address.address
+    address autocomplete: True
+  - Address line 2: employer.address.unit
+    required: False
+  - City: employer.address.city
+  - State: employer.address.state
+    code: |
+      states_list()
+  - ZIP code: employer.address.zip
+---
+id: employer service
+continue button field: employer.service
+question: |
+  About serving ${employer.name_full()}
+subquestion: |
+  After you file your forms with the court, you must have a sheriff or process server serve them to an officer or registered agent of ${employer.name_full()}. Your forms will include instructions with more information.
+
+  You may be able to find the name of  ${employer.name_full()}'s officer or agent on the [Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch).
+---
+id: hearing info
+question: |
+  Court hearing information
+subquestion: |
+  Enter the date, time, and courtroom information for your citation hearing.
+
+  If you do not know this yet, you can leave these fields blank. You must add this information to the citation before you deliver it to ${other_parties[0].name_full()}.
+fields:
+  - Date: hearing_date
+    datatype: date
+    min: ${ today().format("yyyy-MM-dd") }
+    required: False
+  - Time: hearing_time
+    datatype: time
+    required: False
+  - Hearing type: hearing_type
+    input type: radio
+    required: False
+    choices:
+      - In person: person
+      - By phone or video: remote
+  - Courtroom: courtroom
+    maxlength: 10
+    required: False
+    js show if:
+     val('hearing_type') === "person"
+  - Instructions for attending by phone or video: remote_instructions
+    required: False
+    input type: area
+    js show if:
+      val('hearing_type') === "remote"
+---
+id: user address
+question: |
+  What is your address?
+fields:
+  - Street address: users[0].address.address
+    address autocomplete: True
+  - Address line 2: users[0].address.unit
+    required: False
+  - City: users[0].address.city
+  - State: users[0].address.state
+    code: |
+      states_list() 
+  - ZIP code: users[0].address.zip
+---
+id: your contact information
+generic object: ALIndividual
+question: |
+  What is your contact information?
+subquestion: |
+  The court or other parties might need to contact you about this case.
+
+  **This information will appear on your court forms.**
+  
+  If you do not want to list a phone number on your forms, leave it blank.
+
+  If you have an email address, you must list it. Be sure to check your email daily, otherwise you may miss important information about your case.
+
+  ${ collapse_template(contact_info_help) }  
+fields:  
+  - Phone number: x.phone_number
+    datatype: al_international_phone
+    required: False
+  - label: |
+      Do you have an email address?
+    field: x.has_email_address      
+    datatype: yesnoradio
+  - note: |
+      This email address will appear on your court forms. Be sure to check 
+      this email daily, otherwise you may miss important information about 
+      your case.
+    show if: x.has_email_address      
+  - Email address: x.email    
+    datatype: email
+    show if: 
+      variable: x.has_email_address
+      is: True
+---
+template: contact_info_help
+subject: |
+  **What if I don't want to list my email address?**
+content: |  
+  If you do not want to enter your personal email address, you can create a new email account to get email about your case.
+  
+  To make a new email account try one of these email services:
+  
+  * [**Gmail**](https://accounts.google.com/SignUp)
+  * [**Outlook**](https://outlook.live.com/owa/?nlp=1&signup=1)
+  * [**Yahoo**](https://login.yahoo.com/account/create?.lang=en-US&.intl=us)
+---
+id: e-signature
+question: |
+  Do you want to add your e-signature to your *Citation to Discover Assets*?
+subquestion: |
+  This program can put “**/s/ ${users[0].name_full()}**” where you would sign your name. The court will accept this as your signature.
+
+  If you do not add your **{e-signature}**, you must sign your paper forms before you file and deliver them.
+
+  <div class="alert alert-info ilao-info" role="alert">
+    <h6 class="alert-heading">What it means to sign your forms</h6>
+    <p>By signing your <i>Citation to Discover Assets</i>, you are certifying that:</p>
+    <p><ul>
+      <li>Everything on the forms is true and correct, or you have been informed or you believe it is true and correct, and</li>
+      <li>You understand that making a false statement on the forms is perjury and has penalties provided by law.</li>
+    </ul></p>
+    <p>See the <a href="https://www.ilga.gov/legislation/ilcs/documents/073500050k1-109.htm"><b>Code of Civil Procedure, 735 ILCS 5/1-109</b></a> for more information.</p>
+  </div>
+
+fields:
+  - "Add e-signature?": e_signature
+    datatype: yesnoradio
+terms:
+  - "e-signature": |
+      An e-signature is an electronic signature. It is a digital version of a signature that has the same effect as a hand-written signature.
+---
+id: forms assembling
+continue button field: forms_assembling
+question: |
+  Almost done
+subquestion: |
+  After you click **Next**, it may take a few moments to finish making your forms.
+  
+  ###### You do not need to refresh your screen. Hang in there!
+  
+  [NEWLINE]
+---
+id: get docs screen
+event: get_docs_screen
+question: |
+  Download
+subquestion: |
+  Your forms are ready. View and download your forms below. Click **:edit: Make changes** to fix any mistakes.
+  
+  Read the instructions to learn what to do next.
+  
+  This program **does not file** your forms with the court. You will need to do this yourself.
+  
+  ${ action_button_html(url_action('review_answers'), label=':edit: Make changes', color='success', size="md") }
+
+  ${ al_user_bundle.download_list_html() }
+ 
+  &nbsp;
+
+  ${ al_user_bundle.send_button_html(show_editable_checkbox=False) }
+  
+  **Note:** This program **does not file** your forms with the court. You will need to do this yourself.
+
+  Thank you for using ILAO Easy Forms!
+under: |
+  % if not user_logged_in():
+  [${fa_icon("sign-in-alt", color="#0079d0", size="sm")} **Sign-in**](${url_of('login', next=interview_url())}) or [**create**](${url_of('register', next=interview_url())}) an ILAO Easy Form account to save your progress (optional).
+  % endif
+
+ 
+  ${ action_button_html(interview_url(i="docassemble.ILAO:feedback.yml", easy_form_interview=ilao_easy_form_url, easy_form_title=ilao_easy_form_title, easy_form_page=current_context().question_id, easy_form_variable=current_context().variable, local=False,reset=1), label=':comment: Was this program helpful?', color="#181c36", size="md", new_window=True) }
+---
+generic object: ALDocumentBundle
+template: x.send_email_template
+subject: |
+  Citation to Discover Assets to Bank or Employer
+content: |
+  Your forms are attached.
+  
+  Thanks for using ILAO Easy Forms!
+  
+  [**Illinois Legal Aid Online**](https://www.illinoislegalaid.org)
+---
+objects:
+  - bank_instructions: ALDocument.using(title="Instructions (Bank)", filename="bank_instructions.pdf", has_addendum=False)
+  - employer_instructions: ALDocument.using(title="Instructions (Employer)", filename="employer_instructions.pdf", has_addendum=False)
+  - bank_citation: ALDocument.using(title="Citation to Discover Assets to Debtor's Bank", filename="bank_citation.pdf", has_addendum=False)
+  - employer_citation: ALDocument.using(title="Citation to Discover Assets to Debtor's Employer", filename="employer_citation.pdf", has_addendum=False)
+  - bank_sheriff: ALDocument.using(title="Letter to the Sheriff (Optional)", filename="bank_sheriff.pdf", has_addendum=False)
+  - employer_sheriff: ALDocument.using(title="Letter to the Sheriff (Optional)", filename="employer_sheriff.pdf", has_addendum=False)
+---
+objects:
+  - sheriff_bundle: ALDocumentBundle.using(elements=[bank_sheriff, employer_sheriff], filename="letter_to_sheriff.pdf", title = "Letter to the Sheriff (Optional)")
+---
+objects:
+  - al_user_bundle: ALDocumentBundle.using(elements=[bank_instructions, bank_citation, employer_instructions, employer_citation, sheriff_bundle], filename="citation_to_discover_assets_to_bank_or_employer.pdf", title="All forms")
+  - al_court_bundle: ALDocumentBundle.using(elements=[bank_citation, employer_citation, sheriff_bundle], filename="citation_to_discover_assets_to_bank_or_employer.pdf", title="All forms")
+---
+code: |
+  sheriff_bundle.enabled = True
+
+  if collection_source["Bank"]:
+    bank_instructions.enabled = True
+    bank_citation.enabled = True
+    bank_sheriff.enabled = True
+  else:
+    bank_instructions.enabled = False
+    bank_citation.enabled = False
+    bank_sheriff.enabled = False
+
+  if collection_source["Employer"]:
+    employer_instructions.enabled = True
+    employer_citation.enabled = True
+    employer_sheriff.enabled = True
+  else:
+    employer_instructions.enabled = False
+    employer_citation.enabled = False
+    employer_sheriff.enabled = False
+---
+attachment:
+  variable name: bank_instructions[i]
+  name: bank_instructions
+  filename: bank_instructions
+  skip undefined: True
+  editable: False
+  pdf template file: citation_bank_instructions.pdf
+  fields:
+      - "fake": ${ "" } 
+---
+attachment:
+  variable name: employer_instructions[i]
+  name: employer_instructions
+  filename: employer_instructions
+  skip undefined: True
+  editable: False
+  pdf template file: citation_employer_instructions.pdf
+  fields:
+      - "fake": ${ "" } 
+---
+attachment:
+  variable name: bank_citation[i]
+  name: bank_citation
+  filename: bank_citation
+  skip undefined: True
+  editable: False
+  pdf template file: citation_discover_bank.pdf
+  fields:
+      - "county_1": ${trial_court.address.county.upper()}
+      - "county_2": ${trial_court.address.county.upper()}
+      - "plaintiff_name_1": |
+          % if party_label == "plaintiff" or party_label == "petitioner":
+          ${users.full_names()}
+          % else:
+          ${other_parties.full_names()}
+          % endif
+      - "plaintiff_name_2": |
+          % if party_label == "plaintiff" or party_label == "petitioner":
+          ${users.full_names()}
+          % else:
+          ${other_parties.full_names()}
+          % endif
+      - "defendant_name_1": |
+          % if party_label == "plaintiff" or party_label == "petitioner":
+          ${other_parties.full_names()}
+          % else:
+          ${users.full_names()}
+          % endif
+      - "defendant_name_2": |
+          % if party_label == "plaintiff" or party_label == "petitioner":
+          ${other_parties.full_names()}
+          % else:
+          ${users.full_names()}
+          % endif
+      - "bank_name_1": ${bank.name.first}
+      - "bank_name_2": ${bank.name.first}
+      - "bank_name_3": ${bank.name.first}
+      - "bank_street_1": ${bank.address.line_one(bare=True)}
+      - "bank_street_2": ${bank.address.line_one(bare=True)}
+      - "bank_csz_1": ${bank.address.line_two()}
+      - "bank_csz_2": ${bank.address.line_two()}
+      - "case_number_1": ${case_number}
+      - "case_number_2": ${case_number}
+      - "case_number_3": ${case_number}
+      - "case_number_4": ${case_number}
+      - "case_number_5": ${case_number}
+      - "case_number_6": ${case_number}
+      - "case_number_7": ${case_number}
+      - "debtor_name_1": |
+          % if other_parties[0].person_type == "business" and other_parties[0].has_agent:
+          ${agent.name_full()} (registered agent for ${other_parties[0].name_full()})
+          % else:
+          ${other_parties[0].name_full()}
+          % endif
+      - "debtor_name_2": |
+          % if other_parties[0].person_type == "business" and other_parties[0].has_agent:
+          ${agent.name_full()} (registered agent for ${other_parties[0].name_full()})
+          % else:
+          ${other_parties[0].name_full()}
+          % endif
+      - "debtor_name_3": |
+          % if other_parties[0].person_type == "business" and other_parties[0].has_agent:
+          ${agent.name_full()} (registered agent for ${other_parties[0].name_full()})
+          % else:
+          ${other_parties[0].name_full()}
+          % endif
+      - "debtor_street": ${other_parties[0].address.line_one(bare=True)}
+      - "debtor_csz": ${other_parties[0].address.line_two()}
+      - "court_date": ${hearing_date}
+      - "court_time": ${format_time(hearing_time, format='h:mm') if hearing_time != "" else ""}
+      - "court_am": ${True if format_time(hearing_time, format='a')=='AM' and hearing_time != "" else ""}
+      - "court_pm": ${True if format_time(hearing_time, format='a')=='PM' and hearing_time != "" else ""}
+      - "in_person": ${True if hearing_type == "person" else False}
+      - "remote": ${True if hearing_type == "remote" else False}
+      - "courtroom_number": ${courtroom if hearing_type == "person" else ""}
+      - "courtroom_street": |
+          % if hearing_type == "person":
+          ${court_name}, ${court_full_street}
+          % endif
+      - "courtroom_csz": ${court_csz if hearing_type == "person" else ""}
+      - "remote_instructions": ${remote_instructions}
+      - "clerk_phone": ${trial_court.phone}
+      - "clerk_website": ${trial_court.website}
+      - "judgment_date": |
+          % if (today().minus(years=7) > judgment_date) and been_revived:
+          ${renewal_date}
+          % else:
+          ${judgment_date}
+          % endif
+      - "judgment_amount_1": ${currency(judgment_amount, symbol=u'')}
+      - "judgment_amount_2": ${currency(judgment_amount, symbol=u'')}
+      - "current_amount": ${currency(amount_still_owed, symbol=u'')}
+      - "e_signature_1": ${users[0].name_full() if e_signature else ""}
+      - "user_name_1": ${users[0].name_full()}
+      - "user_street_1": ${users[0].address.line_one(bare=True)}
+      - "user_csz_1": ${users[0].address.line_two()}
+      - "user_email_1": ${users[0].email if users[0].has_email_address else ""}
+      - "user_phone_1": ${phone_number_formatted(users[0].phone_number) if users[0].phone_number != "" else ""}
+      - "attorney_number_1" : ${""}
+      - "debtor_ssn": ${other_parties[0].ssn}
+---
+attachment:
+  variable name: employer_citation[i]
+  name: employer_citation
+  filename: employer_citation
+  skip undefined: True
+  editable: False
+  pdf template file: citation_discover_employer.pdf
+  fields:
+      - "county_1": ${trial_court.address.county.upper()}
+      - "county_2": ${trial_court.address.county.upper()}
+      - "plaintiff_name_1": |
+          % if party_label == "plaintiff" or party_label == "petitioner":
+          ${users.full_names()}
+          % else:
+          ${other_parties.full_names()}
+          % endif
+      - "plaintiff_name_2": |
+          % if party_label == "plaintiff" or party_label == "petitioner":
+          ${users.full_names()}
+          % else:
+          ${other_parties.full_names()}
+          % endif
+      - "defendant_name_1": |
+          % if party_label == "plaintiff" or party_label == "petitioner":
+          ${other_parties.full_names()}
+          % else:
+          ${users.full_names()}
+          % endif
+      - "defendant_name_2": |
+          % if party_label == "plaintiff" or party_label == "petitioner":
+          ${other_parties.full_names()}
+          % else:
+          ${users.full_names()}
+          % endif
+      - "employer_name_1": ${employer.name_full()}
+      - "employer_name_2": ${employer.name_full()}
+      - "employer_street_1": ${employer.address.line_one(bare=True)}
+      - "employer_csz_1": ${employer.address.line_two()}
+      - "case_number_1": ${case_number}
+      - "case_number_2": ${case_number}
+      - "case_number_3": ${case_number}
+      - "case_number_4": ${case_number}
+      - "case_number_5": ${case_number}
+      - "case_number_6": ${case_number}
+      - "debtor_name_1": |
+          % if other_parties[0].person_type == "business" and other_parties[0].has_agent:
+          ${agent.name_full()} (registered agent for ${other_parties[0].name_full()})
+          % else:
+          ${other_parties[0].name_full()}
+          % endif
+      - "debtor_name_2": |
+          % if other_parties[0].person_type == "business" and other_parties[0].has_agent:
+          ${agent.name_full()} (registered agent for ${other_parties[0].name_full()})
+          % else:
+          ${other_parties[0].name_full()}
+          % endif
+      - "debtor_street_1": ${other_parties[0].address.line_one(bare=True)}
+      - "debtor_csz_1": ${other_parties[0].address.line_two()}
+      - "court_date": ${hearing_date}
+      - "court_time": ${format_time(hearing_time, format='h:mm') if hearing_time != "" else ""}
+      - "court_am": ${True if format_time(hearing_time, format='a')=='AM' and hearing_time != "" else ""}
+      - "court_pm": ${True if format_time(hearing_time, format='a')=='PM' and hearing_time != "" else ""}
+      - "in_person": ${True if hearing_type == "person" else False}
+      - "remotely": ${True if hearing_type == "remote" else False}
+      - "courtroom_number": ${courtroom if hearing_type == "person" else ""}
+      - "courtroom_street": |
+          % if hearing_type == "person":
+          ${court_name}, ${court_full_street}
+          % endif
+      - "courtroom_csz": ${court_csz if hearing_type == "person" else ""}
+      - "remote_instructions": ${remote_instructions}
+      - "clerk_phone": ${trial_court.phone}
+      - "clerk_website": ${trial_court.website}
+      - "judgment_date": |
+          % if (today().minus(years=7) > judgment_date) and been_revived:
+          ${renewal_date}
+          % else:
+          ${judgment_date}
+          % endif
+      - "judgment_amount_1": ${currency(judgment_amount, symbol=u'')}
+      - "current_amount": ${currency(amount_still_owed, symbol=u'')}
+      - "e_signature_1": ${users[0].name_full() if e_signature else ""}
+      - "user_name_1": ${users[0].name_full()}
+      - "user_street_1": ${users[0].address.line_one(bare=True)}
+      - "user_csz_1": ${users[0].address.line_two()}
+      - "user_email_1": ${users[0].email if users[0].has_email_address else ""}
+      - "user_phone_1": ${phone_number_formatted(users[0].phone_number) if users[0].phone_number != "" else ""}
+      - "attorney_number" : ${""}
+---
+attachment:
+  variable name: bank_sheriff[i]
+  name: bank_sheriff
+  filename: bank_sheriff
+  skip undefined: True
+  editable: False
+  pdf template file: citation_bank_sheriff.pdf
+  fields:
+      - "letter_date": ${""}
+      - "county": ${""}
+      - "state": ${""}
+      - "sheriff_address_line_1": ${""}
+      - "sheriff_address_line_2": ${""}
+      - "sheriff_address_line_3": ${""}
+      - "plaintiff": |
+          % if party_label == "plaintiff" or party_label == "petitioner":
+          ${users.full_names()}
+          % else:
+          ${other_parties.full_names()}
+          % endif
+      - "defendant": |
+          % if party_label == "plaintiff" or party_label == "petitioner":
+          ${other_parties.full_names()}
+          % else:
+          ${users.full_names()}
+          % endif
+      - "case_number": ${ case_number}
+      - "bank_name": ${bank.name.first}
+      - "bank_address": ${bank.address.on_one_line(bare=True)}
+      - "user_name": ${users[0].name_full()}
+      - "user_street": ${users[0].address.line_one(bare=True)}
+      - "user_csz": ${users[0].address.line_two()}
+      - "user_phone": ${phone_number_formatted(users[0].phone_number) if users[0].phone_number != "" else ""}
+---
+attachment:
+  variable name: employer_sheriff[i]
+  name: employer_sheriff
+  filename: employer_sheriff
+  skip undefined: True
+  editable: False
+  pdf template file: citation_employer_sheriff.pdf
+  fields:
+      - "letter_date": ${""}
+      - "county": ${""}
+      - "state": ${""}
+      - "sheriff_address_line_1": ${""}
+      - "sheriff_address_line_2": ${""}
+      - "sheriff_address_line_3": ${""}
+      - "plaintiff": |
+          % if party_label == "plaintiff" or party_label == "petitioner":
+          ${users.full_names()}
+          % else:
+          ${other_parties.full_names()}
+          % endif
+      - "defendant": |
+          % if party_label == "plaintiff" or party_label == "petitioner":
+          ${other_parties.full_names()}
+          % else:
+          ${users.full_names()}
+          % endif
+      - "case_number": ${ case_number}
+      - "employer_name": ${employer.name_full()}
+      - "employer_address": ${employer.address.on_one_line(bare=True)}
+      - "user_name": ${users[0].name_full()}
+      - "user_street": ${users[0].address.line_one(bare=True)}
+      - "user_csz": ${users[0].address.line_two()}
+      - "user_phone": ${phone_number_formatted(users[0].phone_number) if users[0].phone_number != "" else ""}
