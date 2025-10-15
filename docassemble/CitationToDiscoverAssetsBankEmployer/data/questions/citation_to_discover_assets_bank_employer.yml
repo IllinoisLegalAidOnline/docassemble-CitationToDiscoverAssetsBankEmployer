@@ -49,6 +49,7 @@ code: |
 
   nav.set_section('section_judgment')
   other_parties[0].name.first
+  other_parties[0].address.address
   if today().minus(years=7) > judgment_date:
     if not been_revived:
       cant_collect_kickout
@@ -60,8 +61,11 @@ code: |
   set_progress(20)
   if judgment_date > today().minus(days=30):
     wait_note
+  set_progress(20)
   judgment_amount
   amount_still_owed
+
+  nav.set_section('section_case')
   party_label
   users.gather()
   other_parties.gather()
@@ -69,6 +73,7 @@ code: |
     cook_district
   courthouse_info
   case_number
+  set_progress(40)
 
   nav.set_section('section_debtor')
   
@@ -81,7 +86,7 @@ code: |
       out_of_state_bank_note
     else:
       out_of_state_bank_kickout
-  
+  set_progress(60)
   if collection_source["Employer"]:
     employer.name.first
     if employer.in_illinois:
@@ -96,11 +101,13 @@ code: |
 
   nav.set_section('section_user')
   users[0].name.first
+  set_progress(80)
   users[0].address.address
   users[0].has_email_address
   e_signature
   
   nav.set_section('section_download')
+  set_progress(100)
   forms_assembling
   snapshot_forms
   get_docs_screen
@@ -152,9 +159,9 @@ subquestion: |
 
   This program helps you make forms to collect a money you won in a court judgment.
 
-  A Citation to Discover Assets to a Debtor's Bank will require a debtor's bank to give you information about the debtor's income and property. A Citation to Discover Assets to a Debtor's EmployerYou can then try to get that property or income to pay the judgment if it is not protected by law.
+  A *Citation to Discover Assets to a Debtor's Bank* will require a debtor's bank to give you information about the debtor's income and property.  A *Citation to Discover Assets to a Debtor's Employer* will require a debtor's employer to give information abut the debtor's income. You can then try to get that property or income to pay the judgment if it is not protected by law.
 
-  Learn more about [**finding out about a debtor's money, property, and income*](https://www.illinoislegalaid.org/legal-information/finding-out-about-debtors-money-property-and-income).
+  Learn more about [**finding out about a debtor's money, property, and income**](https://www.illinoislegalaid.org/legal-information/finding-out-about-debtors-money-property-and-income).
 field: sees_nav_bar
 ---
 id: instructions
@@ -189,9 +196,9 @@ continue button field: about_citation
 question: |
   About the citations
 subquestion: |
-  A *Citation to discover assets to debtor's bank* tells the debtor's bank to answer questions about the debtor's property and income. A *Citation to discover assets to debtor's employer* tells the debtor's employer to answer questions about the debtor's wages.  After the bank or employer answers your questions, the court may order bank garnishment or wage garnishment.
+  A *Citation to Discover Assets to Debtor's Bank* tells the debtor's bank to answer questions about the debtor's property and income. A *Citation to Discover Assets to Debtor's Employer* tells the debtor's employer to answer questions about the debtor's wages.  After the bank or employer answers your questions, the court may order bank garnishment or wage garnishment.
 
-  This citation does not apply to the debtor. If you want the debtor to answer questions about their property and income, you can use ILAO's [**Citation to discover assets to debtor Easy Form**](https://www.illinoislegalaid.org/legal-information/citation-discover-assets-debtor)
+  This citation does not apply to the debtor. If you want the debtor to answer questions about their property and income, you can use ILAO's [**Citation to discover assets to debtor Easy Form**](https://www.illinoislegalaid.org/legal-information/citation-discover-assets-debtor).
   
   You will need to serve the bank or employer with the citation. You can use a sheriff or private process server to do this. To learn more, read ILAO's article about [**serving a summons**](https://www.illinoislegalaid.org/legal-information/serving-summons).
 ---
@@ -223,7 +230,7 @@ question: |
 subquestion: |
   This is the date the court ruled the other party owed you money.
 
-  You can collect a money judgment that is less than 7 years old. If your money judgment is over 7 years old, you can collect it if the judgment was **[renewed]**.
+  You can collect a money judgment that is less than 7 years old. If your money judgment is over 7 years old, you can collect it if the judgment was **{renewed}**.
 
   If your money judgment was issued after Jan 1, 2020, it can be renewed within 10 years of the judgment date. If it was issued before Jan 1, 2020, it can be renewed within 20 years of the judgment date. Learn more about [**how long a judgment lasts**](https://www.illinoislegalaid.org/legal-information/how-long-does-judgment-last).
 fields:
@@ -246,20 +253,14 @@ fields:
   - When was the judgment renewed?: renewal_date
     datatype: ThreePartsDate
     alMax: |
-      % if judgment_date > "12/31/2019":
-      % if judgment_date.plus(years=10) > today():
-      ${ today().format("yyyy-MM-dd") }
-      % else:
-      ${ judgment_date.plus(years=10) }
-      % endif
-      % else:
       % if judgment_date.plus(years=20) > today():
       ${ today().format("yyyy-MM-dd") }
       % else:
       ${ judgment_date.plus(years=20) }
       % endif
-      % endif
     alMin: ${judgment_date}
+    js show if:
+      val('been_revived') === true
 ---
 id: cant collect kickout
 event: cant_collect_kickout
@@ -615,9 +616,13 @@ fields:
   - I want to collect from their: collection_source
     datatype: checkboxes
     all of the above: True
+    none of the above: False
     choices:
       - Bank
       - Employer
+validation code: |
+  if not collection_source["Bank"] and not collection_source["Employer"]:
+    validation_error("You need to pick at least one.")
 ---
 id: bank name
 question: |
@@ -668,7 +673,7 @@ subquestion: |
   * An officer at any of ${bank.name.first}'s branch offices, or
   * A registered agent of ${bank.name.first}
 
-   You can search online to find the address of a branch office, or you can use the [Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch) to look up ${bank.name.first}'s registered agent.
+   You can search online to find the address of a branch office, or you can use the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch) to look up ${bank.name.first}'s registered agent.
 fields:
   - Street address: bank.address.address
     address autocomplete: True
@@ -690,6 +695,23 @@ fields:
     required: False
     maxlength: 4
 ---
+---
+id: debtor address
+question: |
+   What is ${other_parties[i].name_full()}'s address?
+fields:
+  - Street address: other_parties[i].address.address
+    address autocomplete: True
+  - Address line 2: other_parties[i].address.unit
+    required: False
+  - City: other_parties[i].address.city
+  - State: other_parties[i].address.state
+    code: |
+      states_list()
+  - ZIP code: other_parties[i].address.zip
+---
+sets: 
+  - employer.name.first
 id: employer name
 question: |
   What is the name of ${other_parties[0].name_full()}'s employer?
@@ -739,7 +761,7 @@ question: |
 subquestion: |
   You can search online for ${employer.name_full()}'s address. If you have their phone number, you can call them and ask for their mailing address.
 
-  Some companies may have their address listed on the [Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch).
+  Some companies may have their address listed on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch).
 fields:
   - Street address: employer.address.address
     address autocomplete: True
@@ -758,7 +780,7 @@ question: |
 subquestion: |
   After you file your forms with the court, you must have a sheriff or process server serve them to an officer or registered agent of ${employer.name_full()}. Your forms will include instructions with more information.
 
-  You may be able to find the name of  ${employer.name_full()}'s officer or agent on the [Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch).
+  You may be able to find the name of  ${employer.name_full()}'s officer or agent on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch).
 ---
 id: hearing info
 question: |
@@ -866,7 +888,7 @@ subquestion: |
       <li>Everything on the forms is true and correct, or you have been informed or you believe it is true and correct, and</li>
       <li>You understand that making a false statement on the forms is perjury and has penalties provided by law.</li>
     </ul></p>
-    <p>See the <a href="https://www.ilga.gov/legislation/ilcs/documents/073500050k1-109.htm"><b>Code of Civil Procedure, 735 ILCS 5/1-109</b></a> for more information.</p>
+    <p>See the <a href="https://www.ilga.gov/legislation/ilcs/documents/073500050k1-109.htm"><b>Illinois Code of Civil Procedure, 735 ILCS 5/1-109</b></a> for more information.</p>
   </div>
 
 fields:
@@ -1064,9 +1086,9 @@ attachment:
           ${court_name}, ${court_full_street}
           % endif
       - "courtroom_csz": ${court_csz if hearing_type == "person" else ""}
-      - "remote_instructions": ${remote_instructions}
-      - "clerk_phone": ${trial_court.phone}
-      - "clerk_website": ${trial_court.website}
+      - "remote_instructions": ${remote_instructions if hearing_type == "remote" else ""}
+      - "clerk_phone": ${trial_court.phone if hearing_type == "remote" else ""}
+      - "clerk_website": ${trial_court.website if hearing_type == "remote" else ""}
       - "judgment_date": |
           % if (today().minus(years=7) > judgment_date) and been_revived:
           ${renewal_date}
@@ -1155,9 +1177,9 @@ attachment:
           ${court_name}, ${court_full_street}
           % endif
       - "courtroom_csz": ${court_csz if hearing_type == "person" else ""}
-      - "remote_instructions": ${remote_instructions}
-      - "clerk_phone": ${trial_court.phone}
-      - "clerk_website": ${trial_court.website}
+      - "remote_instructions": ${remote_instructions if hearing_type == "remote" else ""}
+      - "clerk_phone": ${trial_court.phone if hearing_type == "remote" else ""}
+      - "clerk_website": ${trial_court.website if hearing_type == "remote" else ""}
       - "judgment_date": |
           % if (today().minus(years=7) > judgment_date) and been_revived:
           ${renewal_date}
@@ -1241,3 +1263,525 @@ attachment:
       - "user_street": ${users[0].address.line_one(bare=True)}
       - "user_csz": ${users[0].address.line_two()}
       - "user_phone": ${phone_number_formatted(users[0].phone_number) if users[0].phone_number != "" else ""}
+---
+section: Judgment
+id: judgment review screen
+event: section_judgment
+question: |
+  Judgment
+subquestion: |
+  Edit your answers below.
+review:
+  - Edit: judgment_date 
+    button: |
+        **Judgment date:**
+        ${judgment_date}
+  - Edit: been_revived
+    button: |
+      **Has the judgment been revived?**
+      ${word(yesno(been_revived))}
+    show if: today().minus(years=7) > judgment_date
+  - Edit: renewal_date
+    button: |
+        **Revival date:**
+        ${renewal_date}
+    show if: (today().minus(years=7) > judgment_date) and been_revived
+  - Edit: other_parties[0].name.first
+    button: |
+      **Debtor's name:**
+      ${other_parties[0].name_full()}
+  - Edit: other_parties[0].address.address
+    button: |
+      **${other_parties[0].name_full()}'s address:**
+      ${other_parties[0].address.on_one_line(bare=True)}
+  - Edit: judgment_amount
+    button: |
+      **Original judgment amount:**
+      ${currency(judgment_amount)}
+  - Edit: amount_still_owed
+    button: |
+      **Amount still owed:**
+      ${currency(amount_still_owed)}
+---
+id: users review screen
+continue button field: users.revisit
+section: Case info
+question: |
+  Edit your party
+subquestion: |
+  ${ users.table }
+
+  ${ users.add_action() }
+---
+table: users.table
+rows: users
+columns:
+  - Name: |
+      row_item.name_full() if defined("row_item.name.first") else ""
+  - Party: |
+      action_button_html(url_action(row_item.attr_name("review_user_delivery")), label="Edit", icon="pencil-alt")
+delete buttons: True
+confirm: True
+---
+id: other parties review screen
+continue button field: other_parties.revisit
+section: Case info
+question: |
+    Edit the other party
+subquestion: |
+  ${ other_parties.table }
+
+  ${ other_parties.add_action() }
+---
+table: other_parties.table
+rows: other_parties
+columns:
+  - Name: |
+      row_item.name_full() if defined("row_item.name.first") else ""
+  - Party: |
+      action_button_html(url_action(row_item.attr_name("review_other_delivery")), label="Edit", icon="pencil-alt")
+delete buttons: True
+confirm: True
+---
+section: Case details
+id: case details review screen
+event: section_case
+question: |
+  Case details
+subquestion: |
+  Edit your answers below.
+review:
+  - Edit: party_label
+    button: |
+      **Your party label:**
+      ${capitalize(party_label)}
+  - Edit: users.revisit
+    button: |
+      **Your party: (Edit to change name))**
+
+      % for my_var in users:
+        * ${ my_var.name_full() }
+      % endfor
+  - Edit: other_parties.revisit
+    button: |
+      **The other party: (Edit to change name))**
+
+      % for my_var in other_parties:
+        * ${ my_var.name_full() }
+      % endfor
+  - Edit: trial_court_index
+    button: |
+      **You are filing in:**
+      ${end_in_county(trial_court.address.county)}
+  - Edit: cook_district
+    button: |
+      **Cook County courthouse:**
+      % if cook_district == "15":
+      ${ "Daley Center, 50 W. Washington Street, Chicago" }
+      % elif cook_district == "16":
+      ${ "Second Municipal District, 5600 Old Orchard Road, Skokie" }
+      % elif cook_district == "17":
+      ${ "Third Municipal District, 2121 Euclid Avenue, Rolling Meadows" }
+      % elif cook_district == "18":
+      ${ "Fourth Municipal District, 1500 Maybrook Drive, Maywood" }
+      % elif cook_district == "19":
+      ${ "Fifth Municipal District, 10220 S. 76th Avenue, Bridgeview" }
+      % elif cook_district == "20":
+      ${ "Sixth Municipal District, 16501 South Kedzie Parkway, Markham" }
+      % elif cook_district == "21":
+      ${ "Domestic Violence Court, 555 W. Harrison Street, Chicago" }
+      % elif cook_district == "22":
+      ${ "George N. Leighton Criminal Court Building, 2600 S. California Avenue, Chicago" }
+      % else:
+      ${ "Juvenile Center, 2245 West Ogden Avenue, Chicago" }
+      % endif      
+    show if: trial_court_index == -1      
+  - Edit: case_number
+    button: |
+      **Case number:**
+      ${case_number} 
+  - Edit: hearing_date
+    button: |
+      **Hearing information:**
+      
+      % if hearing_date != "":
+      * Date: ${hearing_date}
+      % else:
+      * Date: None entered
+      % endif
+      % if hearing_time != "":
+      * Time: ${ format_time(hearing_time, "h:mm a") }
+      % else:
+      * Time: None entered
+      % endif
+      % if hearing_type == "person":
+      * Type: In person
+      % if courtroom != "":
+      * Courtroom: ${courtroom}
+      % else:
+      * Courtroom: None entered
+      % endif
+      % elif hearing_type == "remote":
+      * Type: By phone or video
+      % if remote_instructions != "":
+      * Instructions for attending: ${remote_instructions}
+      % else:
+      * Instructions for attending: None entered
+      % endif
+      % else:
+      * Type: None entered
+      % endif
+---
+section: Debtor, bank, and employer
+id: Debtor, bank, and employer review screen
+event: section_debtor
+question: |
+  Debtor, bank, and employer
+subquestion: |
+  Edit your answers below.
+review:
+  - Edit: other_parties[0].name.first
+    button: |
+      **Debtor's name:**
+      ${other_parties[0].name_full()}
+  - Edit: other_parties[0].address.address
+    button: |
+      **${other_parties[0].name_full()}'s address:**
+      ${other_parties[0].address.on_one_line(bare=True)}
+  - Edit: collection_source
+    button: |
+      **You want to collect from:**
+      % if collection_source["Bank"] and collection_source["Employer"]:
+      ${other_parties[0].name_full()}'s bank and employer
+      % elif collection_source["Bank"]:
+      ${other_parties[0].name_full()}'s bank
+      % elif collection_source["Employer"]:
+      ${other_parties[0].name_full()}'s employer
+      % endif
+  - Edit: bank.name.first
+    button: |
+      **${other_parties[0].name_full()}'s bank:**
+      ${bank.name.first}
+    show if: collection_source["Bank"]
+  - Edit: bank.address.address
+    button: |
+      **${bank.name.first}'s address:**
+      ${bank.address.on_one_line(bare=True)}
+    show if: collection_source["Bank"]
+  - Edit: other_parties[0].ssn
+    button: |
+      **Last 4 digits of ${other_parties[0].name_full()}'s Social Security Number:**
+      ${other_parties[0].ssn}
+    show if: collection_source["Bank"]
+  - Edit: employer.name.first
+    button: |
+      **${other_parties[0].name_full()}'s employer:**
+      ${employer.name.first}
+    show if: collection_source["Employer"]
+  - Edit: employer.address.address
+    button: |
+      **${employer.name.first}'s address:**
+      ${employer.address.on_one_line(bare=True)}
+    show if: collection_source["Employer"]
+  - Edit: hearing_date
+    button: |
+      **Hearing information:**
+      
+      % if hearing_date != "":
+      * Date: ${hearing_date}
+      % else:
+      * Date: None entered
+      % endif
+      % if hearing_time != "":
+      * Time: ${ format_time(hearing_time, "h:mm a") }
+      % else:
+      * Time: None entered
+      % endif
+      % if hearing_type == "person":
+      * Type: In person
+      % if courtroom != "":
+      * Courtroom: ${courtroom}
+      % else:
+      * Courtroom: None entered
+      % endif
+      % elif hearing_type == "remote":
+      * Type: By phone or video
+      % if remote_instructions != "":
+      * Instructions for attending: ${remote_instructions}
+      % else:
+      * Instructions for attending: None entered
+      % endif
+      % else:
+      * Type: None entered
+      % endif
+---
+section: About you
+id: user review screen
+event: section_user
+question: |
+  About you
+subquestion: |
+  Edit your answers below.
+review:
+  - Edit: users[0].name.first
+    button: |
+      **Your name:**
+      ${users[0].name_full()}
+  - Edit: users[0].address.address
+    button: |
+      **Your address:**
+      ${users[0].address.on_one_line(bare=True)}
+  - Edit: users[0].has_email_address
+    button: |
+      **Your contact information:**
+
+      % if users[0].has_email_address:
+      * Email: ${users[0].email}
+      % else:
+      * Email
+      % endif
+      % if users[0].phone_number != "":
+      * Phone: ${phone_number_formatted(users[0].phone_number)}
+      % else:
+      * Phone:
+      % endif
+  - Edit: e_signature
+    button: |
+      **Do you want to add your e-signature to your forms?**
+      ${ word(yesno(e_signature)) }
+---
+id: user info review screen
+continue button field: x.review_user_delivery
+generic object: ALIndividual
+question: |
+  Edit ${ x.name_full() }'s information
+review: 
+  - Edit: x.name.first
+    button: |
+      **Name:**
+      ${x.name_full()}
+  - Edit: x.address.address
+    button: |
+      **${x.name_full()}'s address:**
+      ${x.address.on_one_line(bare=True)}
+  - Edit: x.has_email_address
+    button: |
+      **Contact information:**
+
+      % if x.has_email_address:
+      * Email: ${x.email}
+      % else:
+      * Email
+      % endif
+      % if x.phone_number != "":
+      * Phone: ${phone_number_formatted(x.phone_number)}
+      % else:
+      * Phone:
+      % endif
+---
+id: other party info review screen
+continue button field: x.review_other_delivery
+generic object: ALIndividual
+question: |
+  Edit ${ x.name_full() }'s information
+review: 
+  - Edit: x.name.first
+    button: |
+      **Name:**
+      ${x.name_full()}
+  - Edit: x.address.address
+    button: |
+      **${x.name_full()}'s address:**
+      ${x.address.on_one_line(bare=True)}
+  - Edit: x.ssn
+    button: |
+      **Last 4 digits of ${x.name_full()}'s Social Security Number:**
+      ${x.ssn}
+    show if: collection_source["Bank"]
+---
+id: review screen
+event: review_answers
+question: |
+  Review screen
+subquestion: |
+  Edit your answers below.
+review: 
+  - note: |
+      <h4>Judgment</h4>
+  - Edit: judgment_date 
+    button: |
+        **Judgment date:**
+        ${judgment_date}
+  - Edit: been_revived
+    button: |
+      **Has the judgment been revived?**
+      ${word(yesno(been_revived))}
+    show if: today().minus(years=7) > judgment_date
+  - Edit: renewal_date
+    button: |
+        **Revival date:**
+        ${renewal_date}
+    show if: (today().minus(years=7) > judgment_date) and been_revived
+  - Edit: other_parties[0].name.first
+    button: |
+      **Debtor's name:**
+      ${other_parties[0].name_full()}
+  - Edit: other_parties[0].address.address
+    button: |
+      **${other_parties[0].name_full()}'s address:**
+      ${other_parties[0].address.on_one_line(bare=True)}
+  - Edit: judgment_amount
+    button: |
+      **Original judgment amount:**
+      ${currency(judgment_amount)}
+  - Edit: amount_still_owed
+    button: |
+      **Amount still owed:**
+      ${currency(amount_still_owed)}
+  - note: |
+      <h4>Case details</h4>
+  - Edit: party_label
+    button: |
+      **Your party label:**
+      ${capitalize(party_label)}
+  - Edit: users.revisit
+    button: |
+      **Your party: (Edit to change name))**
+
+      % for my_var in users:
+        * ${ my_var.name_full() }
+      % endfor
+  - Edit: other_parties.revisit
+    button: |
+      **The other party: (Edit to change name))**
+
+      % for my_var in other_parties:
+        * ${ my_var.name_full() }
+      % endfor
+  - Edit: trial_court_index
+    button: |
+      **You are filing in:**
+      ${end_in_county(trial_court.address.county)}
+  - Edit: cook_district
+    button: |
+      **Cook County courthouse:**
+      % if cook_district == "15":
+      ${ "Daley Center, 50 W. Washington Street, Chicago" }
+      % elif cook_district == "16":
+      ${ "Second Municipal District, 5600 Old Orchard Road, Skokie" }
+      % elif cook_district == "17":
+      ${ "Third Municipal District, 2121 Euclid Avenue, Rolling Meadows" }
+      % elif cook_district == "18":
+      ${ "Fourth Municipal District, 1500 Maybrook Drive, Maywood" }
+      % elif cook_district == "19":
+      ${ "Fifth Municipal District, 10220 S. 76th Avenue, Bridgeview" }
+      % elif cook_district == "20":
+      ${ "Sixth Municipal District, 16501 South Kedzie Parkway, Markham" }
+      % elif cook_district == "21":
+      ${ "Domestic Violence Court, 555 W. Harrison Street, Chicago" }
+      % elif cook_district == "22":
+      ${ "George N. Leighton Criminal Court Building, 2600 S. California Avenue, Chicago" }
+      % else:
+      ${ "Juvenile Center, 2245 West Ogden Avenue, Chicago" }
+      % endif      
+    show if: trial_court_index == -1      
+  - Edit: case_number
+    button: |
+      **Case number:**
+      ${case_number} 
+  - Edit: hearing_date
+    button: |
+      **Hearing information:**
+      
+      % if hearing_date != "":
+      * Date: ${hearing_date}
+      % else:
+      * Date: None entered
+      % endif
+      % if hearing_time != "":
+      * Time: ${ format_time(hearing_time, "h:mm a") }
+      % else:
+      * Time: None entered
+      % endif
+      % if hearing_type == "person":
+      * Type: In person
+      % if courtroom != "":
+      * Courtroom: ${courtroom}
+      % else:
+      * Courtroom: None entered
+      % endif
+      % elif hearing_type == "remote":
+      * Type: By phone or video
+      % if remote_instructions != "":
+      * Instructions for attending: ${remote_instructions}
+      % else:
+      * Instructions for attending: None entered
+      % endif
+      % else:
+      * Type: None entered
+      % endif
+  - note: |
+      <h4>Debtor, bank, and employer</h4>
+  - Edit: collection_source
+    button: |
+      **You want to collect from:**
+      % if collection_source["Bank"] and collection_source["Employer"]:
+      ${other_parties[0].name_full()}'s bank and employer
+      % elif collection_source["Bank"]:
+      ${other_parties[0].name_full()}'s bank
+      % elif collection_source["Employer"]:
+      ${other_parties[0].name_full()}'s employer
+      % endif
+  - Edit: bank.name.first
+    button: |
+      **${other_parties[0].name_full()}'s bank:**
+      ${bank.name.first}
+    show if: collection_source["Bank"]
+  - Edit: bank.address.address
+    button: |
+      **${bank.name.first}'s address:**
+      ${bank.address.on_one_line(bare=True)}
+    show if: collection_source["Bank"]
+  - Edit: other_parties[0].ssn
+    button: |
+      **Last 4 digits of ${other_parties[0].name_full()}'s Social Security Number:**
+      ${other_parties[0].ssn}
+    show if: collection_source["Bank"]
+  - Edit: employer.name.first
+    button: |
+      **${other_parties[0].name_full()}'s employer:**
+      ${employer.name.first}
+    show if: collection_source["Employer"]
+  - Edit: employer.address.address
+    button: |
+      **${employer.name.first}'s address:**
+      ${employer.address.on_one_line(bare=True)}
+    show if: collection_source["Employer"]
+  - note: |
+      <h4>About you</h4>
+  - Edit: users[0].name.first
+    button: |
+      **Your name:**
+      ${users[0].name_full()}
+  - Edit: users[0].address.address
+    button: |
+      **Your address:**
+      ${users[0].address.on_one_line(bare=True)}
+  - Edit: users[0].has_email_address
+    button: |
+      **Your contact information:**
+
+      % if users[0].has_email_address:
+      * Email: ${users[0].email}
+      % else:
+      * Email
+      % endif
+      % if users[0].phone_number != "":
+      * Phone: ${phone_number_formatted(users[0].phone_number)}
+      % else:
+      * Phone:
+      % endif
+  - Edit: e_signature
+    button: |
+      **Do you want to add your e-signature to your forms?**
+      ${ word(yesno(e_signature)) }
