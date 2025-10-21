@@ -1,6 +1,6 @@
 metadata:
-  title: Citation to Discover Assets to Bank or Employer
-  short title: Citation to Discover Assets 
+  title: Collect a judgment from debtor's bank or employer
+  short title: Collect from bank or employer
   comment: This program helps you make forms to collect on a money judgment from a debtor's bank or employe
   authors:
     - Vivian McNaughton
@@ -19,7 +19,7 @@ objects:
   - court_list: ALCourtLoader.using(file_name='docassemble.ILAO:data/sources/il_courts.xlsx')
 ---
 code: |
-  ilao_easy_form_title = "Citation to Discover Assets to Bank or Employer"
+  ilao_easy_form_title = "Collect a judgment from debtor's bank or employer"
   ilao_easy_form_url = "https://www.illinoislegalaid.org/legal-information/collect-judgment-debtors-bank-or-employer"
   github_user = 'IllinoisLegalAidOnline'
   github_repo_name = 'docassemble-CitationToDiscoverAssetsBankEmployer'
@@ -81,6 +81,7 @@ code: |
     bank.name.first
     if bank.in_illinois:
       bank.address.address
+      bank.service
       other_parties[0].ssn
     elif collection_source["Employer"]:
       out_of_state_bank_note
@@ -136,6 +137,10 @@ code: |
 
   stuff_to_snapshot['zip'] = showifdef('users[0].address.zip')
 
+  stuff_to_snapshot['employer'] = showifdef('collection_source["Employer"]')
+
+  stuff_to_snapshot['bank'] = showifdef('collection_source["Bank"]')
+
   stuff_to_snapshot['downloaded_forms'] = showifdef('forms_assembling')
   
   store_variables_snapshot(
@@ -153,15 +158,13 @@ code: |
 ---
 id: welcome
 question: |
-  Citation to discover assets to a debtor's bank or employer
+  Collect a judgment from debtor's bank or employer
 subquestion: |
-  Welcome to Illinois Legal Aid Online's **Citation to discover assets to a debtor's bank or employer** Easy Form.
+  Welcome to Illinois Legal Aid Online's **Collect a judgment from debtor's bank or employer** Easy Form.
 
-  This program helps you make forms to collect a money you won in a court judgment.
+  This program helps you make forms to collect a money you won in a court judgment. If your debtor is refusing to pay, you can ask the court to help you get payment from the debtor's bank or employer.
 
-  A *Citation to Discover Assets to a Debtor's Bank* will require a debtor's bank to give you information about the debtor's income and property.  A *Citation to Discover Assets to a Debtor's Employer* will require a debtor's employer to give information abut the debtor's income. You can then try to get that property or income to pay the judgment if it is not protected by law.
-
-  Learn more about [**finding out about a debtor's money, property, and income**](https://www.illinoislegalaid.org/legal-information/finding-out-about-debtors-money-property-and-income).
+  To learn more, read ILAO's article on [**finding out about a debtor's money, property, and income**](https://www.illinoislegalaid.org/legal-information/finding-out-about-debtors-money-property-and-income).
 field: sees_nav_bar
 ---
 id: instructions
@@ -173,10 +176,11 @@ subquestion: |
 
   * Case number,
   * Courthouse address if court hearing is in person,
-  * Circuit clerk phone, website, and remote hearing instructions if court hearing is remote, 
+  * Remote hearing instructions from the CIrcuit Clerk if court hearing is remote, 
   * Name and address of the debtor,
-  * Date of judgment or the date it was renewed (revived),
-  * Amount of judgment, and
+  * Name and address of the debtor's bank or employer,
+  * Name and address of the bank or employer's registered agent, if any,
+  * Date and amount of judgment, and
   * Amount that remains unpaid.
 
   Set aside 10 to 15 minutes to finish this program. You can log in and save your work to return to later. 
@@ -196,7 +200,12 @@ continue button field: about_citation
 question: |
   About the citations
 subquestion: |
-  A *Citation to Discover Assets to Debtor's Bank* tells the debtor's bank to answer questions about the debtor's property and income. A *Citation to Discover Assets to Debtor's Employer* tells the debtor's employer to answer questions about the debtor's wages.  After the bank or employer answers your questions, the court may order bank garnishment or wage garnishment.
+  This program can make two different types of *Citations*.
+  
+  * A *Citation to Discover Assets to Debtor's Bank* tells the debtor's bank to answer questions about the debtor's property and income. 
+  * A *Citation to Discover Assets to Debtor's Employer* tells the debtor's employer to answer questions about the debtor's wages.  
+  
+  After the bank or employer answers your questions, the court may order bank garnishment or wage garnishment.
 
   This citation does not apply to the debtor. If you want the debtor to answer questions about their property and income, you can use ILAO's [**Citation to discover assets to debtor Easy Form**](https://www.illinoislegalaid.org/legal-information/citation-discover-assets-debtor).
   
@@ -213,7 +222,7 @@ question: |
   % endif
 subquestion: |
   % if i == 0:
-  The **debtor** is the person or business that owes you money. Their name will be on the court papers from the case where the judge ruled they owe you money.
+  The **debtor** is the person or business who has been ordered by a judge to pay you money. Their name will be on the court papers from the case where the judge ruled they owe you money.
 
   A business and its owner may have both been parties in the original case. You should enter which of the two the court ordered to pay you. If the judgment does not say which one should pay you, you may need to get a new copy from the court.
 
@@ -228,16 +237,15 @@ id: judgment date
 question: |
   When was the judgment date?
 subquestion: |
-  This is the date the court ruled the other party owed you money.
+  This is the date the court ruled ${other_parties[0].name_full()}owed you money.
 
   You can collect a money judgment that is less than 7 years old. If your money judgment is over 7 years old, you can collect it if the judgment was **{renewed}**.
 
-  If your money judgment was issued after Jan 1, 2020, it can be renewed within 10 years of the judgment date. If it was issued before Jan 1, 2020, it can be renewed within 20 years of the judgment date. Learn more about [**how long a judgment lasts**](https://www.illinoislegalaid.org/legal-information/how-long-does-judgment-last).
+  If your money judgment was issued after January 1, 2020, it can be renewed within 10 years of the judgment date. If it was issued before January 1, 2020, it can be renewed within 20 years of the judgment date. Learn more about [**how long a judgment lasts**](https://www.illinoislegalaid.org/legal-information/how-long-does-judgment-last).
 fields:
   - Judgment date: judgment_date
     datatype: ThreePartsDate
     alMax: ${ today().format("yyyy-MM-dd") }
-    alMin: ${ today().minus(years=27) }
 terms: 
   - renewed: |
       A money judgment is **renewed** or revived if the you filed a petition to revive judgment and the court agreed to revive it. 
@@ -247,6 +255,8 @@ question: |
   Has the judgment been renewed?
 subquestion: |
   A money judgment is **renewed** or revived if the you filed a petition to revive judgment and the court agreed to revive it. 
+
+  If the money judgment has been renewed more than once, enter the date of the most recent renewal.
 fields:
   - no label: been_revived
     datatype: yesnoradio
@@ -334,16 +344,18 @@ subquestion: |
 id: judgment amount
 question: |
   Details about the amount ${other_parties[0].name_full()} still owes you
-subquestion: |
-  This information is used to figure out how much money you are still owed. This includes the original judgment amount, court costs, interest on the judgment amount, and how much ${other_parties[0].name_full()} has already paid you.
-  
+subquestion: | 
   % if (judgment_date > as_datetime('12/31/2019')):
   For judgments entered after 2019, the simple interest rate on the unpaid amount can vary. If the judgment is a **{consumer debt judgment}** of $25,000 or less, the simple interest rate is 5% per year. Otherwise, the simple interest rate is 9% per year. 
   
-  Figuring out how much interest you are owed can be complicated by how much time has passed and if ${other_parties[0].name_full()} has paid you part of the judgment. If you do not know how much interest you are owed, you may want to talk with a lawyer. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
+  Figuring out how much interest you are owed can be complicated by how much time has passed and if ${other_parties[0].name_full()} has paid you part of the judgment. 
+  
+  If you do not know how much interest you are owed, you may want to talk with a lawyer. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
 
   % else:
-  For judgments entered before 2020, the simple interest rate on the unpaid amount is 9% per year. Figuring out how much interest you are owed can be complicated by how much time has passed and if ${other_parties[0].name_full()} has paid you part of the judgment. If you do not know how much interest you are owed, you may want to talk with a lawyer. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
+  For judgments entered before 2020, the simple interest rate on the unpaid amount is 9% per year. Figuring out how much interest you are owed can be complicated by how much time has passed and if ${other_parties[0].name_full()} has paid you part of the judgment. 
+  
+  If you do not know how much interest you are owed, you may want to talk with a lawyer. Use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
   
   % endif
   ${collapse_template(calculating_interest)}
@@ -351,16 +363,19 @@ fields:
   - Judgment amount: judgment_amount
     datatype: currency
     step: 0.01
+    max: 100000000
     help: |
       This is the amount that ${other_parties[0].name_full()} was ordered to pay you in the ${judgment_date} judgment.
   - Your court costs: court_costs
     required: False
     step: 0.01
+    max: 100000000
     datatype: currency
     help: |
       These are costs such as filing fees and lawyers' fees. You should only include costs the court ordered ${other_parties[0].name_full()} to pay. If the court did not order ${other_parties[0].name_full()} to cover your court costs, you should leave this at zero.
   - Interest: interest_amount
     required: False
+    max: 10000000
     datatype: currency
     step: 0.01
     help: |
@@ -373,9 +388,17 @@ fields:
     required: False
     datatype: currency
     step: 0.01
+    max: 100000000
     help: |
       This is the total amount of money ${other_parties[0].name_full()} has already paid you. If ${other_parties[0].name_full()} has not paid any of the judgment, you should leave this at zero.
-
+validation code: |
+  if already_paid_amount > (judgment_amount + court_costs + interest_amount):
+    validation_error("The amount already paid should not be greater than the total amount owed.")
+terms: 
+  - consumer debt judgment: |
+      **Consumer debt** is debt taken out for personal, family, or household purposes. 
+      
+      A **consumer debt judgment** is a judgment from a court case about consumer debt.
 ---
 template: calculating_interest
 subject: |
@@ -494,7 +517,7 @@ question: |
     Was anyone else on your side of the case?
 subquestion: |
   % if len(users.elements) > 1:  
-  So far you have told us about ${users.full_names()}.
+  So far you have told us about ${fix_punctuation(users.full_names())}
   % else:
   If there are other ${party_label}s besides you, click **Yes**.
   % endif
@@ -529,7 +552,7 @@ question: |
   Are there any other ${opposing_party}s in this case?
 subquestion: |
   % if len(other_parties.elements) >= 1:  
-  So far you have told us about ${other_parties.full_names()}.
+  So far you have told us about ${fix_punctuation(other_parties.full_names())}
   % endif
 fields:
   - no label: other_parties.there_is_another
@@ -615,7 +638,8 @@ question: |
 fields:
   - I want to collect from their: collection_source
     datatype: checkboxes
-    all of the above: True
+    all of the above: |
+      Both bank and employer
     none of the above: False
     choices:
       - Bank
@@ -666,14 +690,9 @@ subquestion: |
 ---
 id: bank address
 question: |
-  Where will you serve the forms to ${bank.name.first}?
+  What is ${bank.name.first}'s address?
 subquestion: |
-  After you file your forms with the court, you will need a sheriff or process server to serve them to:
-
-  * An officer at any of ${bank.name.first}'s branch offices, or
-  * A registered agent of ${bank.name.first}
-
-   You can search online to find the address of a branch office, or you can use the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch) to look up ${bank.name.first}'s registered agent.
+  You can search online to find the address of a branch office, or you can use the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch) to look up ${bank.name.first}'s registered agent.
 fields:
   - Street address: bank.address.address
     address autocomplete: True
@@ -778,9 +797,29 @@ continue button field: employer.service
 question: |
   About serving ${employer.name_full()}
 subquestion: |
-  After you file your forms with the court, you must have a sheriff or process server serve them to an officer or registered agent of ${employer.name_full()}. Your forms will include instructions with more information.
+  After you file your forms with the court, you will need a sheriff or process server to serve them to:
+  
+  * A registered agent of ${employer.name_full()},
+  * An officer of ${employer.name_full()}, or
+  * ${employer.name_full()}, if they are a person.
 
   You may be able to find the name of  ${employer.name_full()}'s officer or agent on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch).
+
+  This program will make a *Letter to the Sheriff* form for you. You should send this to the sheriff in the county where ${employer.name_full()} is. Before you send it you will need to make sure all the names and addresses are correct, include money or a waiver for the cost of service, and sign your name.
+---
+id: bank service
+continue button field: bank.service
+question: |
+  About serving ${bank.name_full()}
+subquestion: |
+  After you file your forms with the court, you will need a sheriff or process server to serve them to:
+
+  * An officer at any of ${bank.name.first}'s branch offices, or
+  * A registered agent of ${bank.name.first} 
+
+  You may be able to find the name of  ${bank.name_full()}'s officer or agent on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch).
+
+  This program will make a *Letter to the Sheriff* form for you. You should send this to the sheriff in the county where ${bank.name_full()} is. Before you send it you will need to make sure all the names and addresses are correct, include money or a waiver for the cost of service, and sign your name.
 ---
 id: hearing info
 question: |
@@ -811,6 +850,7 @@ fields:
   - Instructions for attending by phone or video: remote_instructions
     required: False
     input type: area
+    maxlength: 120
     js show if:
       val('hearing_type') === "remote"
 ---
@@ -880,17 +920,38 @@ subquestion: |
   This program can put “**/s/ ${users[0].name_full()}**” where you would sign your name. The court will accept this as your signature.
 
   If you do not add your **{e-signature}**, you must sign your paper forms before you file and deliver them.
-
+  
+  % if collection_source["Bank"] and collection_source["Employer"]:
   <div class="alert alert-info ilao-info" role="alert">
     <h6 class="alert-heading">What it means to sign your forms</h6>
-    <p>By signing your <i>Citation to Discover Assets</i>, you are certifying that:</p>
+    <p>By signing your <i>Citation to Discover Assets to Debtor's Bank</i> and your <i>Citation to Discover Assets to Debtor's Employer</i>, you are certifying that:</p>
     <p><ul>
       <li>Everything on the forms is true and correct, or you have been informed or you believe it is true and correct, and</li>
       <li>You understand that making a false statement on the forms is perjury and has penalties provided by law.</li>
     </ul></p>
     <p>See the <a href="https://www.ilga.gov/legislation/ilcs/documents/073500050k1-109.htm"><b>Illinois Code of Civil Procedure, 735 ILCS 5/1-109</b></a> for more information.</p>
   </div>
-
+  % elif collection_source["Bank"]:
+  <div class="alert alert-info ilao-info" role="alert">
+    <h6 class="alert-heading">What it means to sign your forms</h6>
+    <p>By signing your <i>Citation to Discover Assets to Debtor's Bank</i>, you are certifying that:</p>
+    <p><ul>
+      <li>Everything on the forms is true and correct, or you have been informed or you believe it is true and correct, and</li>
+      <li>You understand that making a false statement on the forms is perjury and has penalties provided by law.</li>
+    </ul></p>
+    <p>See the <a href="https://www.ilga.gov/legislation/ilcs/documents/073500050k1-109.htm"><b>Illinois Code of Civil Procedure, 735 ILCS 5/1-109</b></a> for more information.</p>
+  </div>
+  % elif collection_source["Employer"]:
+  <div class="alert alert-info ilao-info" role="alert">
+    <h6 class="alert-heading">What it means to sign your forms</h6>
+    <p>By signing your <i>Citation to Discover Assets to Debtor's Employer</i>, you are certifying that:</p>
+    <p><ul>
+      <li>Everything on the forms is true and correct, or you have been informed or you believe it is true and correct, and</li>
+      <li>You understand that making a false statement on the forms is perjury and has penalties provided by law.</li>
+    </ul></p>
+    <p>See the <a href="https://www.ilga.gov/legislation/ilcs/documents/073500050k1-109.htm"><b>Illinois Code of Civil Procedure, 735 ILCS 5/1-109</b></a> for more information.</p>
+  </div>
+  % endif
 fields:
   - "Add e-signature?": e_signature
     datatype: yesnoradio
@@ -942,7 +1003,7 @@ under: |
 generic object: ALDocumentBundle
 template: x.send_email_template
 subject: |
-  Citation to Discover Assets to Bank or Employer
+  Collect a judgment from debtor's bank or employer
 content: |
   Your forms are attached.
   
@@ -955,19 +1016,15 @@ objects:
   - employer_instructions: ALDocument.using(title="Instructions (Employer)", filename="employer_instructions.pdf", has_addendum=False)
   - bank_citation: ALDocument.using(title="Citation to Discover Assets to Debtor's Bank", filename="bank_citation.pdf", has_addendum=False)
   - employer_citation: ALDocument.using(title="Citation to Discover Assets to Debtor's Employer", filename="employer_citation.pdf", has_addendum=False)
-  - bank_sheriff: ALDocument.using(title="Letter to the Sheriff (Optional)", filename="bank_sheriff.pdf", has_addendum=False)
-  - employer_sheriff: ALDocument.using(title="Letter to the Sheriff (Optional)", filename="employer_sheriff.pdf", has_addendum=False)
+  - bank_sheriff: ALDocument.using(title="Letter to the Sheriff for Bank (Optional)", filename="bank_letter_to_sheriff.pdf", has_addendum=False)
+  - employer_sheriff: ALDocument.using(title="Letter to the Sheriff for Employer (Optional)", filename="employer_letter_to_sheriff.pdf", has_addendum=False)
+---
 ---
 objects:
-  - sheriff_bundle: ALDocumentBundle.using(elements=[bank_sheriff, employer_sheriff], filename="letter_to_sheriff.pdf", title = "Letter to the Sheriff (Optional)")
----
-objects:
-  - al_user_bundle: ALDocumentBundle.using(elements=[bank_instructions, bank_citation, employer_instructions, employer_citation, sheriff_bundle], filename="citation_to_discover_assets_to_bank_or_employer.pdf", title="All forms")
-  - al_court_bundle: ALDocumentBundle.using(elements=[bank_citation, employer_citation, sheriff_bundle], filename="citation_to_discover_assets_to_bank_or_employer.pdf", title="All forms")
+  - al_user_bundle: ALDocumentBundle.using(elements=[bank_instructions, bank_citation, bank_sheriff, employer_instructions, employer_citation, employer_sheriff], filename="citation_to_discover_assets_to_bank_or_employer.pdf", title="All forms")
+  - al_court_bundle: ALDocumentBundle.using(elements=[bank_citation, employer_citation, bank_sheriff, employer_sheriff], filename="citation_to_discover_assets_to_bank_or_employer.pdf", title="All forms")
 ---
 code: |
-  sheriff_bundle.enabled = True
-
   if collection_source["Bank"]:
     bank_instructions.enabled = True
     bank_citation.enabled = True
@@ -1201,7 +1258,7 @@ attachment:
   name: bank_sheriff
   filename: bank_sheriff
   skip undefined: True
-  editable: False
+  editable: True
   pdf template file: citation_bank_sheriff.pdf
   fields:
       - "letter_date": ${""}
@@ -1235,7 +1292,7 @@ attachment:
   name: employer_sheriff
   filename: employer_sheriff
   skip undefined: True
-  editable: False
+  editable: True
   pdf template file: citation_employer_sheriff.pdf
   fields:
       - "letter_date": ${""}
