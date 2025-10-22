@@ -162,7 +162,7 @@ question: |
 subquestion: |
   Welcome to Illinois Legal Aid Online's **Collect a judgment from debtor's bank or employer** Easy Form.
 
-  This program helps you make forms to collect a money you won in a court judgment. If your debtor is refusing to pay, you can ask the court to help you get payment from the debtor's bank or employer.
+  This program helps you make forms to collect a money you won in a court judgment. If the debtor is refusing to pay, you can ask the court to help you get payment from their bank or employer.
 
   To learn more, read ILAO's article on [**finding out about a debtor's money, property, and income**](https://www.illinoislegalaid.org/legal-information/finding-out-about-debtors-money-property-and-income).
 field: sees_nav_bar
@@ -175,8 +175,6 @@ subquestion: |
   To use this program you will need to know the:
 
   * Case number,
-  * Courthouse address if court hearing is in person,
-  * Remote hearing instructions from the CIrcuit Clerk if court hearing is remote, 
   * Name and address of the debtor,
   * Name and address of the debtor's bank or employer,
   * Name and address of the bank or employer's registered agent, if any,
@@ -200,16 +198,19 @@ continue button field: about_citation
 question: |
   About the citations
 subquestion: |
-  This program can make two different types of *Citations*.
+  This program can make two different types of citations:
   
   * A *Citation to Discover Assets to Debtor's Bank* tells the debtor's bank to answer questions about the debtor's property and income. 
   * A *Citation to Discover Assets to Debtor's Employer* tells the debtor's employer to answer questions about the debtor's wages.  
-  
-  After the bank or employer answers your questions, the court may order bank garnishment or wage garnishment.
 
-  This citation does not apply to the debtor. If you want the debtor to answer questions about their property and income, you can use ILAO's [**Citation to discover assets to debtor Easy Form**](https://www.illinoislegalaid.org/legal-information/citation-discover-assets-debtor).
+  **Note:** This citation does not apply to the debtor. If you want the debtor to answer questions about their property and income, you can use ILAO's [**Citation to discover assets to debtor Easy Form**](https://www.illinoislegalaid.org/node/123576).
   
-  You will need to serve the bank or employer with the citation. You can use a sheriff or private process server to do this. To learn more, read ILAO's article about [**serving a summons**](https://www.illinoislegalaid.org/legal-information/serving-summons).
+  After the bank or employer answers your questions, the court may order bank **{garnishment}** or wage **{garnishment}**.
+  
+  You will need to serve the bank or employer with the citation. You can use a sheriff or private process server to do this. To learn more, read ILAO's article about [**serving a summons**](https://www.illinoislegalaid.org/node/147221).
+terms:
+  - garnishment: |
+      **Garnishment** is when someone's money is taken out of their paycheck or bank account to pay for a debt they owe.
 ---
 sets:
   - other_parties[i].name.first
@@ -258,7 +259,7 @@ subquestion: |
 
   If the money judgment has been renewed more than once, enter the date of the most recent renewal.
 fields:
-  - no label: been_revived
+  - Judgment renewed?: been_revived
     datatype: yesnoradio
   - When was the judgment renewed?: renewal_date
     datatype: ThreePartsDate
@@ -631,6 +632,7 @@ subquestion: |
   The case number is in the caption near the top of the first page of the court forms.
 fields:
   - Case number: case_number
+    max: 20
 ---
 id: collection source
 question: |
@@ -646,7 +648,7 @@ fields:
       - Employer
 validation code: |
   if not collection_source["Bank"] and not collection_source["Employer"]:
-    validation_error("You need to pick at least one.")
+    validation_error("You need to pick at least one.", field="collection_source")
 ---
 id: bank name
 question: |
@@ -692,7 +694,7 @@ id: bank address
 question: |
   What is ${bank.name.first}'s address?
 subquestion: |
-  You can search online to find the address of a branch office, or you can use the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch) to look up ${bank.name.first}'s registered agent.
+  You can search online to find the address of a branch office, or you can look up ${bank.name.first} on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch).
 fields:
   - Street address: bank.address.address
     address autocomplete: True
@@ -800,12 +802,15 @@ subquestion: |
   After you file your forms with the court, you will need a sheriff or process server to serve them to:
   
   * A registered agent of ${employer.name_full()},
-  * An officer of ${employer.name_full()}, or
+  * An **{officer}** of ${employer.name_full()}, or
   * ${employer.name_full()}, if they are a person.
 
-  You may be able to find the name of  ${employer.name_full()}'s officer or agent on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch).
+  You may be able to find the name of ${employer.name_full()}'s officer or agent on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch).
 
-  This program will make a *Letter to the Sheriff* form for you. You should send this to the sheriff in the county where ${employer.name_full()} is. Before you send it you will need to make sure all the names and addresses are correct, include money or a waiver for the cost of service, and sign your name.
+  This program will make a *Letter to the Sheriff* form for you. You should send this to the sheriff in the county where ${employer.name_full()}, their agent, or their officer is. Before you send it you will need to make sure all the names and addresses are correct, include money or a waiver for the cost of service, and sign your name.
+terms:
+  - "officer": |
+      A company's **officer** is a high-level employee in charge of management. Presidents, treasurers, CEOs, and CFOs are usually officers. Some small companies do not have officers.
 ---
 id: bank service
 continue button field: bank.service
@@ -814,20 +819,39 @@ question: |
 subquestion: |
   After you file your forms with the court, you will need a sheriff or process server to serve them to:
 
-  * An officer at any of ${bank.name.first}'s branch offices, or
+  * An **{officer}** at any of ${bank.name.first}'s branch offices, or
   * A registered agent of ${bank.name.first} 
 
-  You may be able to find the name of  ${bank.name_full()}'s officer or agent on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch).
+  You may be able to find the name of ${bank.name_full()}'s officer or agent on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch).
 
-  This program will make a *Letter to the Sheriff* form for you. You should send this to the sheriff in the county where ${bank.name_full()} is. Before you send it you will need to make sure all the names and addresses are correct, include money or a waiver for the cost of service, and sign your name.
+  This program will make a *Letter to the Sheriff* form for you. You should send this to the sheriff in the county where ${bank.name_full()}'s officer or agent is. Before you send it you will need to make sure all the names and addresses are correct, include money or a waiver for the cost of service, and sign your name.
+terms:
+  - "officer": |
+      A bank's **officer** is an employee who is allowed to sign documents for the bank. Executives, branch managers, and assistant managers are usually officers.
 ---
 id: hearing info
 question: |
-  Court hearing information
+  % if collection_source["Bank"] and collection_source["Employer"]:
+  ${bank.name.first} and ${employer.name_full()}'s deadline to file answers
+  % elif collection_source["Bank"]:
+  ${bank.name.first}'s deadline to file an answer
+  % elif collection_source["Employer"]:
+  ${employer.name_full()}'s deadline to file an answer
+  % endif
 subquestion: |
-  Enter the date, time, and courtroom information for your citation hearing.
+  % if collection_source["Bank"] and collection_source["Employer"]:
+  The court clerk may have set a date for your citation hearing. ${bank.name.first} and ${employer.name_full()} will need to file answers to your citation before that date or appear at the hearing. 
 
-  If you do not know this yet, you can leave these fields blank. You must add this information to the citation before you deliver it to ${other_parties[0].name_full()}.
+  If you know it, enter the date, time, and courtroom information for your citation hearing. If you do not know this yet, you can leave these fields blank. You must add this information to the citation before you deliver it to ${bank.name.first} and ${employer.name_full()}.
+  % elif collection_source["Bank"]:
+  The court clerk may have set a date for your citation hearing. ${bank.name.first} will need to file an answer to your citation before that date or appear at the hearing. 
+
+  If you know it, enter the date, time, and courtroom information for your citation hearing. If you do not know this yet, you can leave these fields blank. You must add this information to the citation before you deliver it to ${bank.name.first}.
+  % elif collection_source["Employer"]:
+  The court clerk may have set a date for your citation hearing. ${employer.name_full()} will need to file an answer to your citation before that date or appear at the hearing. 
+
+  If you know it, enter the date, time, and courtroom information for your citation hearing. If you do not know this yet, you can leave these fields blank. You must add this information to the citation before you deliver it to ${employer.name_full()}.
+  % endif
 fields:
   - Date: hearing_date
     datatype: date
@@ -1245,7 +1269,7 @@ attachment:
           % endif
       - "judgment_amount_1": ${currency(judgment_amount, symbol=u'')}
       - "current_amount": ${currency(amount_still_owed, symbol=u'')}
-      - "e_signature_1": ${users[0].name_full() if e_signature else ""}
+      - "e_signature": ${users[0].name_full() if e_signature else ""}
       - "user_name_1": ${users[0].name_full()}
       - "user_street_1": ${users[0].address.line_one(bare=True)}
       - "user_csz_1": ${users[0].address.line_two()}
@@ -1280,8 +1304,8 @@ attachment:
           ${users.full_names()}
           % endif
       - "case_number": ${ case_number}
-      - "bank_name": ${bank.name.first}
-      - "bank_address": ${bank.address.on_one_line(bare=True)}
+      - "bank_name": ${""}
+      - "bank_address": ${""}
       - "user_name": ${users[0].name_full()}
       - "user_street": ${users[0].address.line_one(bare=True)}
       - "user_csz": ${users[0].address.line_two()}
@@ -1314,8 +1338,8 @@ attachment:
           ${users.full_names()}
           % endif
       - "case_number": ${ case_number}
-      - "employer_name": ${employer.name_full()}
-      - "employer_address": ${employer.address.on_one_line(bare=True)}
+      - "employer_name": ${""}
+      - "employer_address": ${""}
       - "user_name": ${users[0].name_full()}
       - "user_street": ${users[0].address.line_one(bare=True)}
       - "user_csz": ${users[0].address.line_two()}
