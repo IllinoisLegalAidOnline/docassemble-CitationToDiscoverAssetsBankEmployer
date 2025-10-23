@@ -822,7 +822,7 @@ subquestion: |
   * An **{officer}** at any of ${bank.name.first}'s branch offices, or
   * A registered agent of ${bank.name.first} 
 
-  You may be able to find the name of ${bank.name_full()}'s officer or agent on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch).
+  You may be able to find the name of ${bank.name_full()}'s officer or agent on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch). You do not need to know which branch ${other_parties[0].name_full()} used.
 
   This program will make a *Letter to the Sheriff* form for you. You should send this to the sheriff in the county where ${bank.name_full()}'s officer or agent is. Before you send it you will need to make sure all the names and addresses are correct, include money or a waiver for the cost of service, and sign your name.
 terms:
@@ -832,7 +832,7 @@ terms:
 id: hearing info
 question: |
   % if collection_source["Bank"] and collection_source["Employer"]:
-  ${bank.name.first} and ${employer.name_full()}'s deadline to file answers
+  ${bank.name.first} and ${employer.name_full()}'s deadline to file an answer
   % elif collection_source["Bank"]:
   ${bank.name.first}'s deadline to file an answer
   % elif collection_source["Employer"]:
@@ -1483,7 +1483,7 @@ review:
       ${case_number} 
   - Edit: hearing_date
     button: |
-      **Hearing information:**
+      **Answer deadline and hearing information:**
       
       % if hearing_date != "":
       * Date: ${hearing_date}
@@ -1566,7 +1566,7 @@ review:
     show if: collection_source["Employer"]
   - Edit: hearing_date
     button: |
-      **Hearing information:**
+      **Answer deadline and hearing information:**
       
       % if hearing_date != "":
       * Date: ${hearing_date}
@@ -1772,7 +1772,7 @@ review:
       ${case_number} 
   - Edit: hearing_date
     button: |
-      **Hearing information:**
+      **Answer deadline and hearing information:**
       
       % if hearing_date != "":
       * Date: ${hearing_date}
