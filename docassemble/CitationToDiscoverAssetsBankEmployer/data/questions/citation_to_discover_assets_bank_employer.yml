@@ -93,7 +93,7 @@ code: |
     if employer.in_illinois:
       employer.address.address
       employer.service
-    elif collection_source["Bank"]:
+    elif collection_source["Bank"] and bank.in_illinois:
       out_of_state_employer_note
     else:
       out_of_state_employer_kickout
@@ -178,7 +178,7 @@ subquestion: |
   * Name and address of the debtor,
   * Name and address of the debtor's bank or employer,
   * Name and address of the bank or employer's registered agent, if any,
-  * Date and amount of judgment, and
+  * Date and amount of the judgment, and
   * Amount that remains unpaid.
 
   Set aside 10 to 15 minutes to finish this program. You can log in and save your work to return to later. 
@@ -238,11 +238,9 @@ id: judgment date
 question: |
   When was the judgment date?
 subquestion: |
-  This is the date the court ruled ${other_parties[0].name_full()}owed you money.
+  This is the date the court ruled ${other_parties[0].name_full()} owed you money.
 
-  You can collect a money judgment that is less than 7 years old. If your money judgment is over 7 years old, you can collect it if the judgment was **{renewed}**.
-
-  If your money judgment was issued after January 1, 2020, it can be renewed within 10 years of the judgment date. If it was issued before January 1, 2020, it can be renewed within 20 years of the judgment date. Learn more about [**how long a judgment lasts**](https://www.illinoislegalaid.org/legal-information/how-long-does-judgment-last).
+  ${collapse_template(older_judgments)}
 fields:
   - Judgment date: judgment_date
     datatype: ThreePartsDate
@@ -251,11 +249,21 @@ terms:
   - renewed: |
       A money judgment is **renewed** or revived if the you filed a petition to revive judgment and the court agreed to revive it. 
 ---
+template: older_judgments
+subject: |
+  **Collecting older judgments**
+content: |
+  You can collect a money judgment that is less than 7 years old. If your money judgment is over 7 years old, you can collect it if the judgment was **{renewed}**.
+
+  If your money judgment was issued after January 1, 2020, it can be renewed within 10 years of the judgment date. If it was issued before January 1, 2020, it can be renewed within 20 years of the judgment date. 
+
+  To learn more, read ILAO's article about [**how long a judgment lasts**](https://www.illinoislegalaid.org/legal-information/how-long-does-judgment-last).
+---
 id: been revived date
 question: |
   Has the judgment been renewed?
 subquestion: |
-  A money judgment is **renewed** or revived if the you filed a petition to revive judgment and the court agreed to revive it. 
+  A money judgment is **renewed** or revived if you filed a petition to revive the judgment and the court agreed to revive it. 
 
   If the money judgment has been renewed more than once, enter the date of the most recent renewal.
 fields:
@@ -694,7 +702,7 @@ id: bank address
 question: |
   What is ${bank.name.first}'s address?
 subquestion: |
-  You can search online to find the address of a branch office, or you can look up ${bank.name.first} on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch).
+  You can search online to find the address of a branch office, or you can look up ${bank.name.first} on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/).
 fields:
   - Street address: bank.address.address
     address autocomplete: True
@@ -782,7 +790,7 @@ question: |
 subquestion: |
   You can search online for ${employer.name_full()}'s address. If you have their phone number, you can call them and ask for their mailing address.
 
-  Some companies may have their address listed on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch).
+  Some companies may have their address listed on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/).
 fields:
   - Street address: employer.address.address
     address autocomplete: True
@@ -810,7 +818,7 @@ subquestion: |
   This program will make a *Letter to the Sheriff* form for you. You should send this to the sheriff in the county where ${employer.name_full()}, their agent, or their officer is. Before you send it you will need to make sure all the names and addresses are correct, include money or a waiver for the cost of service, and sign your name.
 terms:
   - "officer": |
-      A company's **officer** is a high-level employee in charge of management. Presidents, treasurers, CEOs, and CFOs are usually officers. Some small companies do not have officers.
+      A company's **officer** is a high-level employee in charge of management. Presidents, treasurers, CEOs, and CFOs are usually officers.
 ---
 id: bank service
 continue button field: bank.service
@@ -1049,7 +1057,7 @@ objects:
   - al_court_bundle: ALDocumentBundle.using(elements=[bank_citation, employer_citation, bank_sheriff, employer_sheriff], filename="citation_to_discover_assets_to_bank_or_employer.pdf", title="All forms")
 ---
 code: |
-  if collection_source["Bank"]:
+  if collection_source["Bank"] and bank.in_illinois:
     bank_instructions.enabled = True
     bank_citation.enabled = True
     bank_sheriff.enabled = True
@@ -1058,7 +1066,7 @@ code: |
     bank_citation.enabled = False
     bank_sheriff.enabled = False
 
-  if collection_source["Employer"]:
+  if collection_source["Employer"] and employer.in_illinois:
     employer_instructions.enabled = True
     employer_citation.enabled = True
     employer_sheriff.enabled = True
