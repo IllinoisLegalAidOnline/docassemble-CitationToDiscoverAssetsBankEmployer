@@ -818,7 +818,7 @@ subquestion: |
   This program will make a *Letter to the Sheriff* form for you. You should send this to the sheriff in the county where ${employer.name_full()}, their agent, or their officer is. Before you send it you will need to make sure all the names and addresses are correct, include money or a waiver for the cost of service, and sign your name.
 terms:
   - "officer": |
-      A company's **officer** is a high-level employee in charge of management. Presidents, treasurers, CEOs, and CFOs are usually officers.
+      A company's **officer** is a high-level employee in charge of management. Presidents, treasurers, CEOs, and CFOs are usually officers. If a company does not have an officer, you can serve the company's owner or manager.
 ---
 id: bank service
 continue button field: bank.service
