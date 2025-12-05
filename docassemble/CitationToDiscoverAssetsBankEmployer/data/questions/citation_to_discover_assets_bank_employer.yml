@@ -58,6 +58,7 @@ code: |
         if renewal_date > judgment_date.plus(years=10):
           if is_consumer_debt:
             consumer_debt_kickout 
+  is_consumer_debt
   set_progress(20)
   if judgment_date > today().minus(days=30):
     wait_note
@@ -83,6 +84,7 @@ code: |
       bank.address.address
       bank.service
       other_parties[0].ssn
+      any_debtor_docs
     elif collection_source["Employer"]:
       out_of_state_bank_note
     else:
@@ -457,6 +459,23 @@ content: |
   The total amount owed would be $1,000 plus $90 plus $90, which is $1,180.
 
   If ${other_parties[0].name_full()} had already paid you $300 for that judgment, you would subtract that from the total amount owed. The amount still owed would be $1,180 minus $300, which is $880.
+---
+id: any debtor docs
+question: |
+  Do you want ${bank.name_full()} to bring any specific documents to court?
+subquestion: |
+  The citation will tell ${bank.name_full()} to bring information about any accounts, property, or safety deposit boxes ${other_parties[0].name_full()} has with them.
+
+  You only need to click **Yes** if you want ${bank.name_full()} to bring something in addition to the above information.
+fields:
+  - Should ${bank.name_full()} bring specific documents?: any_debtor_docs
+    datatype: yesnoradio
+  - What documents should they bring?: debtor_docs
+    input type: area
+    rows: 5
+    maxlength: 250
+    js show if:
+      val('any_debtor_docs') === true
 ---
 id: party label
 question: |
@@ -879,12 +898,25 @@ fields:
     required: False
     js show if:
      val('hearing_type') === "person"
-  - Instructions for attending by phone or video: remote_instructions
-    required: False
+  - Video conference website (URL): remote_website
+    maxlength: 100
     input type: area
-    maxlength: 120
+    rows: 2
+    required: False
     js show if:
-      val('hearing_type') === "remote"
+     val('hearing_type') === "remote"
+  - Video conference log-in information (Meeting ID, password, etc.): remote_login
+    maxlength: 100
+    input type: area
+    rows: 2
+    required: False
+    js show if:
+     val('hearing_type') === "remote"
+  - Call-in phone number for remote appearance: remote_phone
+    datatype: al_international_phone
+    required: False
+    js show if:
+     val('hearing_type') === "remote"
 ---
 id: user address
 question: |
@@ -1081,7 +1113,7 @@ attachment:
   filename: bank_instructions
   skip undefined: True
   editable: False
-  pdf template file: citation_bank_instructions.pdf
+  pdf template file: citation_bank_2026_instructions.pdf
   fields:
       - "fake": ${ "" } 
 ---
@@ -1091,7 +1123,7 @@ attachment:
   filename: employer_instructions
   skip undefined: True
   editable: False
-  pdf template file: citation_employer_instructions.pdf
+  pdf template file: citation_employer_2026_instructions.pdf
   fields:
       - "fake": ${ "" } 
 ---
@@ -1101,7 +1133,7 @@ attachment:
   filename: bank_citation
   skip undefined: True
   editable: False
-  pdf template file: citation_discover_bank.pdf
+  pdf template file: citation_discover_bank_2026.pdf
   fields:
       - "county_1": ${trial_court.address.county.upper()}
       - "county_2": ${trial_court.address.county.upper()}
@@ -1133,9 +1165,8 @@ attachment:
       - "bank_name_2": ${bank.name.first}
       - "bank_name_3": ${bank.name.first}
       - "bank_street_1": ${bank.address.line_one(bare=True)}
-      - "bank_street_2": ${bank.address.line_one(bare=True)}
       - "bank_csz_1": ${bank.address.line_two()}
-      - "bank_csz_2": ${bank.address.line_two()}
+      - "bank_address_2": ${bank.address.on_one_line(bare=True)}
       - "case_number_1": ${case_number}
       - "case_number_2": ${case_number}
       - "case_number_3": ${case_number}
@@ -1143,26 +1174,17 @@ attachment:
       - "case_number_5": ${case_number}
       - "case_number_6": ${case_number}
       - "case_number_7": ${case_number}
+      - "case_number_8": ${case_number}
+      - "case_number_9": ${case_number}
       - "debtor_name_1": |
           % if other_parties[0].person_type == "business" and other_parties[0].has_agent:
           ${agent.name_full()} (registered agent for ${other_parties[0].name_full()})
           % else:
           ${other_parties[0].name_full()}
           % endif
-      - "debtor_name_2": |
-          % if other_parties[0].person_type == "business" and other_parties[0].has_agent:
-          ${agent.name_full()} (registered agent for ${other_parties[0].name_full()})
-          % else:
-          ${other_parties[0].name_full()}
-          % endif
-      - "debtor_name_3": |
-          % if other_parties[0].person_type == "business" and other_parties[0].has_agent:
-          ${agent.name_full()} (registered agent for ${other_parties[0].name_full()})
-          % else:
-          ${other_parties[0].name_full()}
-          % endif
-      - "debtor_street": ${other_parties[0].address.line_one(bare=True)}
-      - "debtor_csz": ${other_parties[0].address.line_two()}
+      - "debtor_name_2": ${other_parties[0].name_full()}
+      - "debtor_name_3": ${other_parties[0].name_full()}
+      - "debtor_address_1": ${other_parties[0].address.on_one_line(bare=True)}
       - "court_date": ${hearing_date}
       - "court_time": ${format_time(hearing_time, format='h:mm') if hearing_time != "" else ""}
       - "court_am": ${True if format_time(hearing_time, format='a')=='AM' and hearing_time != "" else ""}
@@ -1170,14 +1192,15 @@ attachment:
       - "in_person": ${True if hearing_type == "person" else False}
       - "remote": ${True if hearing_type == "remote" else False}
       - "courtroom_number": ${courtroom if hearing_type == "person" else ""}
-      - "courtroom_street": |
+      - "courtroom_address_and_number": |
           % if hearing_type == "person":
-          ${court_name}, ${court_full_street}
+          ${court_name}, ${court_full_street}, ${court_csz}, Room ${courtroom}
           % endif
-      - "courtroom_csz": ${court_csz if hearing_type == "person" else ""}
-      - "remote_instructions": ${remote_instructions if hearing_type == "remote" else ""}
-      - "clerk_phone": ${trial_court.phone if hearing_type == "remote" else ""}
-      - "clerk_website": ${trial_court.website if hearing_type == "remote" else ""}
+      - "video_website": ${ remote_website if hearing_type == "remote" else ""}
+      - "log_in_info": ${ remote_login if hearing_type == "remote" else ""}
+      - "call_in_phone": ${ remote_phone if hearing_type == "remote" else ""}
+      - "clerk_phone": ${trial_court.phone}
+      - "clerk_website": ${trial_court.website}
       - "judgment_date": |
           % if (today().minus(years=7) > judgment_date) and been_revived:
           ${renewal_date}
@@ -1187,14 +1210,16 @@ attachment:
       - "judgment_amount_1": ${currency(judgment_amount, symbol=u'')}
       - "judgment_amount_2": ${currency(judgment_amount, symbol=u'')}
       - "current_amount": ${currency(amount_still_owed, symbol=u'')}
+      - "is_consumer": ${is_consumer_debt}
+      - "not_consumer": ${True if not is_consumer_debt else False}
+      - "other_docs": ${debtor_docs if any_debtor_docs else ""}
       - "e_signature_1": ${users[0].name_full() if e_signature else ""}
       - "user_name_1": ${users[0].name_full()}
-      - "user_street_1": ${users[0].address.line_one(bare=True)}
-      - "user_csz_1": ${users[0].address.line_two()}
+      - "user_address_1": ${users[0].address.on_one_line(bare=True)}
       - "user_email_1": ${users[0].email if users[0].has_email_address else ""}
       - "user_phone_1": ${phone_number_formatted(users[0].phone_number) if users[0].phone_number != "" else ""}
-      - "attorney_number_1" : ${""}
       - "debtor_ssn": ${other_parties[0].ssn}
+      - "for_self": ${True}
 ---
 attachment:
   variable name: employer_citation[i]
@@ -1202,7 +1227,7 @@ attachment:
   filename: employer_citation
   skip undefined: True
   editable: False
-  pdf template file: citation_discover_employer.pdf
+  pdf template file: citation_discover_employer_2026.pdf
   fields:
       - "county_1": ${trial_court.address.county.upper()}
       - "county_2": ${trial_court.address.county.upper()}
@@ -1240,35 +1265,32 @@ attachment:
       - "case_number_4": ${case_number}
       - "case_number_5": ${case_number}
       - "case_number_6": ${case_number}
+      - "case_number_7": ${case_number}
+      - "case_number_8": ${case_number}
       - "debtor_name_1": |
           % if other_parties[0].person_type == "business" and other_parties[0].has_agent:
           ${agent.name_full()} (registered agent for ${other_parties[0].name_full()})
           % else:
           ${other_parties[0].name_full()}
           % endif
-      - "debtor_name_2": |
-          % if other_parties[0].person_type == "business" and other_parties[0].has_agent:
-          ${agent.name_full()} (registered agent for ${other_parties[0].name_full()})
-          % else:
-          ${other_parties[0].name_full()}
-          % endif
-      - "debtor_street_1": ${other_parties[0].address.line_one(bare=True)}
-      - "debtor_csz_1": ${other_parties[0].address.line_two()}
+      - "debtor_name_2": ${other_parties[0].name_full()}
+      - "debtor_address_1": ${other_parties[0].address.on_one_line(bare=True)}
       - "court_date": ${hearing_date}
       - "court_time": ${format_time(hearing_time, format='h:mm') if hearing_time != "" else ""}
       - "court_am": ${True if format_time(hearing_time, format='a')=='AM' and hearing_time != "" else ""}
       - "court_pm": ${True if format_time(hearing_time, format='a')=='PM' and hearing_time != "" else ""}
       - "in_person": ${True if hearing_type == "person" else False}
-      - "remotely": ${True if hearing_type == "remote" else False}
+      - "remote": ${True if hearing_type == "remote" else False}
       - "courtroom_number": ${courtroom if hearing_type == "person" else ""}
-      - "courtroom_street": |
+      - "courtroom_address_and_number": |
           % if hearing_type == "person":
-          ${court_name}, ${court_full_street}
+          ${court_name}, ${court_full_street}, ${court_csz}, Room ${courtroom}
           % endif
-      - "courtroom_csz": ${court_csz if hearing_type == "person" else ""}
-      - "remote_instructions": ${remote_instructions if hearing_type == "remote" else ""}
-      - "clerk_phone": ${trial_court.phone if hearing_type == "remote" else ""}
-      - "clerk_website": ${trial_court.website if hearing_type == "remote" else ""}
+      - "video_website": ${ remote_website if hearing_type == "remote" else ""}
+      - "log_in_info": ${ remote_login if hearing_type == "remote" else ""}
+      - "call_in_phone": ${ remote_phone if hearing_type == "remote" else ""}
+      - "clerk_phone": ${trial_court.phone}
+      - "clerk_website": ${trial_court.website}
       - "judgment_date": |
           % if (today().minus(years=7) > judgment_date) and been_revived:
           ${renewal_date}
@@ -1277,13 +1299,14 @@ attachment:
           % endif
       - "judgment_amount_1": ${currency(judgment_amount, symbol=u'')}
       - "current_amount": ${currency(amount_still_owed, symbol=u'')}
-      - "e_signature": ${users[0].name_full() if e_signature else ""}
+      - "is_consumer": ${is_consumer_debt}
+      - "not_consumer": ${True if not is_consumer_debt else False}
+      - "e_signature_1": ${users[0].name_full() if e_signature else ""}
       - "user_name_1": ${users[0].name_full()}
-      - "user_street_1": ${users[0].address.line_one(bare=True)}
-      - "user_csz_1": ${users[0].address.line_two()}
+      - "user_address_1": ${users[0].address.on_one_line(bare=True)}
       - "user_email_1": ${users[0].email if users[0].has_email_address else ""}
       - "user_phone_1": ${phone_number_formatted(users[0].phone_number) if users[0].phone_number != "" else ""}
-      - "attorney_number" : ${""}
+      - "for_self": ${True}
 ---
 attachment:
   variable name: bank_sheriff[i]
@@ -1291,7 +1314,7 @@ attachment:
   filename: bank_sheriff
   skip undefined: True
   editable: True
-  pdf template file: citation_bank_sheriff.pdf
+  pdf template file: citation_bank_2026_sheriff.pdf
   fields:
       - "letter_date": ${""}
       - "county": ${""}
@@ -1315,8 +1338,7 @@ attachment:
       - "bank_name": ${""}
       - "bank_address": ${""}
       - "user_name": ${users[0].name_full()}
-      - "user_street": ${users[0].address.line_one(bare=True)}
-      - "user_csz": ${users[0].address.line_two()}
+      - "user_address": ${users[0].address.on_one_line(bare=True)}
       - "user_phone": ${phone_number_formatted(users[0].phone_number) if users[0].phone_number != "" else ""}
 ---
 attachment:
@@ -1349,8 +1371,7 @@ attachment:
       - "employer_name": ${""}
       - "employer_address": ${""}
       - "user_name": ${users[0].name_full()}
-      - "user_street": ${users[0].address.line_one(bare=True)}
-      - "user_csz": ${users[0].address.line_two()}
+      - "user_address": ${users[0].address.on_one_line(bare=True)}
       - "user_phone": ${phone_number_formatted(users[0].phone_number) if users[0].phone_number != "" else ""}
 ---
 section: Judgment
@@ -1383,6 +1404,10 @@ review:
     button: |
       **${other_parties[0].name_full()}'s address:**
       ${other_parties[0].address.on_one_line(bare=True)}
+  - Edit: is_consumer_debt
+    button: |
+      **Was the judgment for consumer debt?**
+      ${word(yesno(is_consumer_debt))}
   - Edit: judgment_amount
     button: |
       **Original judgment amount:**
@@ -1512,10 +1537,20 @@ review:
       % endif
       % elif hearing_type == "remote":
       * Type: By phone or video
-      % if remote_instructions != "":
-      * Instructions for attending: ${remote_instructions}
+      % if remote_website != "":
+      * Video conference website (URL): ${remote_website}
       % else:
-      * Instructions for attending: None entered
+      * Video conference website (URL): None entered
+      % endif
+      % if remote_login != "":
+      * Log-in information: ${remote_login}
+      % else:
+      * Log-in information: None entered
+      % endif
+      % if remote_phone != "":
+      * Call-in phone number: ${ phone_number_formatted(remote_phone) }
+      % else:
+      * Call-in phone number: None entered
       % endif
       % else:
       * Type: None entered
@@ -1562,6 +1597,16 @@ review:
       **Last 4 digits of ${other_parties[0].name_full()}'s Social Security Number:**
       ${other_parties[0].ssn}
     show if: collection_source["Bank"]
+  - Edit: any_debtor_docs
+    button: |
+      % if any_debtor_docs:
+      **What specific documents should ${bank.name_full()} bring to court?**
+      ${debtor_docs}
+      % else:
+      **Do you want ${bank.name_full()} to bring specific documents to court?** 
+      No
+      % endif
+    show if: collection_source["Bank"]
   - Edit: employer.name.first
     button: |
       **${other_parties[0].name_full()}'s employer:**
@@ -1595,10 +1640,20 @@ review:
       % endif
       % elif hearing_type == "remote":
       * Type: By phone or video
-      % if remote_instructions != "":
-      * Instructions for attending: ${remote_instructions}
+      % if remote_website != "":
+      * Video conference website (URL): ${remote_website}
       % else:
-      * Instructions for attending: None entered
+      * Video conference website (URL): None entered
+      % endif
+      % if remote_login != "":
+      * Log-in information: ${remote_login}
+      % else:
+      * Log-in information: None entered
+      % endif
+      % if remote_phone != "":
+      * Call-in phone number: ${ phone_number_formatted(remote_phone) }
+      % else:
+      * Call-in phone number: None entered
       % endif
       % else:
       * Type: None entered
@@ -1719,6 +1774,10 @@ review:
     button: |
       **${other_parties[0].name_full()}'s address:**
       ${other_parties[0].address.on_one_line(bare=True)}
+  - Edit: is_consumer_debt
+    button: |
+      **Was the judgment for consumer debt?**
+      ${word(yesno(is_consumer_debt))}
   - Edit: judgment_amount
     button: |
       **Original judgment amount:**
@@ -1801,10 +1860,20 @@ review:
       % endif
       % elif hearing_type == "remote":
       * Type: By phone or video
-      % if remote_instructions != "":
-      * Instructions for attending: ${remote_instructions}
+      % if remote_website != "":
+      * Video conference website (URL): ${remote_website}
       % else:
-      * Instructions for attending: None entered
+      * Video conference website (URL): None entered
+      % endif
+      % if remote_login != "":
+      * Log-in information: ${remote_login}
+      % else:
+      * Log-in information: None entered
+      % endif
+      % if remote_phone != "":
+      * Call-in phone number: ${ phone_number_formatted(remote_phone) }
+      % else:
+      * Call-in phone number: None entered
       % endif
       % else:
       * Type: None entered
@@ -1835,6 +1904,16 @@ review:
     button: |
       **Last 4 digits of ${other_parties[0].name_full()}'s Social Security Number:**
       ${other_parties[0].ssn}
+    show if: collection_source["Bank"]
+  - Edit: any_debtor_docs
+    button: |
+      % if any_debtor_docs:
+      **What specific documents should ${bank.name_full()} bring to court?**
+      ${debtor_docs}
+      % else:
+      **Do you want ${bank.name_full()} to bring specific documents to court?** 
+      No
+      % endif
     show if: collection_source["Bank"]
   - Edit: employer.name.first
     button: |
