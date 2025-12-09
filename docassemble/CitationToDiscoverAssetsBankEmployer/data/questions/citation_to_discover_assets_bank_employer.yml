@@ -354,7 +354,7 @@ subquestion: |
 ---
 id: judgment amount
 question: |
-  Info about what ${other_parties[0].name_full()} still owes you
+  Info about what ${other_parties[0].name_full()} owes you
 subquestion: | 
   % if (judgment_date > as_datetime('12/31/2019')):
   For judgments entered after 2019, the simple interest rate on the unpaid amount can vary. If the judgment is a **{consumer debt judgment}** of $25,000 or less, the simple interest rate is 5% per year. Otherwise, the simple interest rate is 9% per year. 
@@ -391,9 +391,9 @@ fields:
     step: 0.01
     help: |
       % if (judgment_date > as_datetime('12/31/2019')) and is_consumer_debt:
-      The rate for post-judgment simple interest on a consumer debt judgment under $25,000 is 5%. For larger judgments, the interest rate is 9%. This program does not calculate how much interest you are owed.
+      The rate for post-judgment simple interest on a consumer debt judgment under $25,000 is 5%. For larger judgments, the interest rate is 9%. This program **does not calculate** how much interest you are owed.
       % else:
-      The rate for post-judgment simple interest is 9% per year on the unpaid amount of the judgment. This program does not calculate how much interest you are owed.
+      The rate for post-judgment simple interest is 9% per year on the unpaid amount of the judgment. This program **does not calculate** how much interest you are owed.
       % endif
   - Amount already paid: already_paid_amount
     required: False
@@ -418,7 +418,7 @@ content: |
   % if (judgment_date > as_datetime('12/31/2019')):
   The interest rate is calculated as simple interest on the unpaid amount.
   
-  Imagine you had a judgment of $1,000 two years ago, and it was not for consumer debt, the simple interest rate would be 9%. You would multiply $1,000 x 9% to get $90 for each year. That would bring the interest to a total of $180. That’s the amount you can ask for in your citation.
+  If you had a judgment of $1,000 two years ago, and it was not for consumer debt, the simple interest rate would be 9%. You would multiply $1,000 x 9% to get $90 for each year. That would bring the interest to a total of $180. That’s the amount you can ask for in your citation.
   % else:
   The 9% interest rate is calculated as simple interest on the unpaid amount.
 
@@ -470,14 +470,14 @@ subquestion: |
 fields:
   - Should ${bank.name_full()} bring specific documents?: any_debtor_docs
     datatype: yesnoradio
+  - note: |
+      The form has space for about **300 characters**, including spaces.
+    show if: any_debtor_docs
   - What documents should they bring?: debtor_docs
     input type: area
-    rows: 5
+    rows: 8
     maxlength: 300
-    note: |
-      The form has space for about **300 characters**, including spaces.
-    js show if:
-      val('any_debtor_docs') === true
+    show if: any_debtor_docs
 ---
 id: party label
 question: |
