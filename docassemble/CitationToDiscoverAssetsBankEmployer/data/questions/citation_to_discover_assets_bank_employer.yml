@@ -205,14 +205,16 @@ subquestion: |
   * A *Citation to Discover Assets to Debtor's Bank* tells the debtor's bank to answer questions about the debtor's property and income. 
   * A *Citation to Discover Assets to Debtor's Employer* tells the debtor's employer to answer questions about the debtor's wages.  
 
-  **Note:** This citation does not apply to the debtor. If you want the debtor to answer questions about their property and income, you can use ILAO's [**Citation to discover assets to debtor Easy Form**](https://www.illinoislegalaid.org/node/123576).
+  **Note:** This citation does not go **directly** to the debtor. If you want the debtor to answer questions about their property and income, you can use ILAO's [**Citation to discover assets to debtor Easy Form**](https://www.illinoislegalaid.org/node/123576).
   
-  After the bank or employer answers your questions, the court may order bank **{garnishment}** or wage **{garnishment}**.
+  After the bank or employer answers your questions, the court may order **{bank garnishment}** or **{wage garnishment}**.
   
   You will need to serve the bank or employer with the citation. You can use a sheriff or private process server to do this. To learn more, read ILAO's article about [**serving a summons**](https://www.illinoislegalaid.org/node/147221).
 terms:
-  - garnishment: |
-      **Garnishment** is when someone's money is taken out of their paycheck or bank account to pay for a debt they owe.
+  - wage garnishment: |
+      **Wage garnishment** is when someone's money is taken out of their paycheck to pay for a debt they owe.
+  - bank garnishment: |
+      **Bank garnishment** is when someone's money is taken out of their bank account to pay for a debt they owe.
 ---
 sets:
   - other_parties[i].name.first
@@ -354,7 +356,7 @@ subquestion: |
 ---
 id: judgment amount
 question: |
-  Info about what ${other_parties[0].name_full()} owes you
+  Details about what ${other_parties[0].name_full()} owes you
 subquestion: | 
   % if (judgment_date > as_datetime('12/31/2019')):
   For judgments entered after 2019, the simple interest rate on the unpaid amount can vary. If the judgment is a **{consumer debt judgment}** of $25,000 or less, the simple interest rate is 5% per year. Otherwise, the simple interest rate is 9% per year. 
@@ -418,11 +420,11 @@ content: |
   % if (judgment_date > as_datetime('12/31/2019')):
   The interest rate is calculated as simple interest on the unpaid amount.
   
-  If you had a judgment of $1,000 two years ago, and it was not for consumer debt, the simple interest rate would be 9%. You would multiply $1,000 x 9% to get $90 for each year. That would bring the interest to a total of $180. That’s the amount you can ask for in your citation.
+  If you had a judgment of $1,000 two years ago, and it was not for consumer debt, the simple interest rate would be 9%. You would multiply $1,000 x 9% to get $90 for each year. That would bring the interest to a total of $180. That's the amount of interest you can ask for in your citation.
   % else:
   The 9% interest rate is calculated as simple interest on the unpaid amount.
 
-  If you had a judgment of $1,000 two years ago, and it was not for consumer debt, the simple interest rate would be 9%. You would multiply $1,000 x 9% to get $90 for each year. That would bring the interest to a total of $180. That’s the amount you can ask for in your citation.
+  If you had a judgment of $1,000 two years ago, and it was not for consumer debt, the simple interest rate would be 9%. You would multiply $1,000 x 9% to get $90 for each year. That would bring the interest to a total of $180. That's the amount of interest you can ask for in your citation.
   % endif
 ---
 depends on:
@@ -470,13 +472,13 @@ subquestion: |
 fields:
   - Should ${bank.name_full()} bring specific documents?: any_debtor_docs
     datatype: yesnoradio
-  - note: |
-      The form has space for about **300 characters**, including spaces.
-    show if: any_debtor_docs
   - What documents should they bring?: debtor_docs
     input type: area
     rows: 8
     maxlength: 300
+    show if: any_debtor_docs
+  - note: |
+      The form has space for about **300 characters**, including spaces.
     show if: any_debtor_docs
 ---
 id: party label
@@ -741,7 +743,7 @@ question: |
 subquestion: |
   If you do not know, you can leave this blank.
 fields:
-  - SSN: other_parties[0].ssn
+  - Last 4 digits of ${other_parties[0].name_full()}'s SSN: other_parties[0].ssn
     required: False
     maxlength: 4
 ---
@@ -890,8 +892,9 @@ fields:
     datatype: time
     required: False
   - Hearing type: hearing_type
-    input type: radio
+    datatype: checkboxes
     required: False
+    none of the above: False
     choices:
       - In person: person
       - By phone or video: remote
@@ -903,20 +906,17 @@ fields:
     input type: area
     rows: 2
     required: False
-    js show if:
-     val('hearing_type') === "remote"
+    show if: hearing_type['remote']
   - Video conference log-in information (Meeting ID, password, etc.): remote_login
     maxlength: 100
     input type: area
     rows: 2
     required: False
-    js show if:
-     val('hearing_type') === "remote"
+    show if: hearing_type['remote']
   - Call-in phone number for remote appearance: remote_phone
     datatype: al_international_phone
     required: False
-    js show if:
-     val('hearing_type') === "remote"
+    show if: hearing_type['remote']
 ---
 id: user address
 question: |
@@ -1177,16 +1177,16 @@ attachment:
       - "court_time": ${format_time(hearing_time, format='h:mm') if hearing_time != "" else ""}
       - "court_am": ${True if format_time(hearing_time, format='a')=='AM' and hearing_time != "" else ""}
       - "court_pm": ${True if format_time(hearing_time, format='a')=='PM' and hearing_time != "" else ""}
-      - "in_person": ${True if hearing_type == "person" else False}
-      - "remote": ${True if hearing_type == "remote" else False}
+      - "in_person": ${True if hearing_type['person'] else False}
+      - "remote": ${True if hearing_type['remote'] else False}
       - "courtroom_number": ${courtroom}
       - "courtroom_address_and_number": |
-          % if hearing_type == "person":
+          % if hearing_type['person']:
           ${court_name}, ${court_full_street}, ${court_csz}, Room ${courtroom}
           % endif
-      - "video_website": ${ remote_website if hearing_type == "remote" else ""}
-      - "log_in_info": ${ remote_login if hearing_type == "remote" else ""}
-      - "call_in_phone": ${ remote_phone if hearing_type == "remote" else ""}
+      - "video_website": ${ remote_website if hearing_type['remote'] else ""}
+      - "log_in_info": ${ remote_login if hearing_type['remote'] else ""}
+      - "call_in_phone": ${ remote_phone if hearing_type['remote'] else ""}
       - "clerk_phone": ${trial_court.phone}
       - "clerk_website": ${trial_court.website}
 ---
@@ -1280,16 +1280,16 @@ attachment:
       - "court_time": ${format_time(hearing_time, format='h:mm') if hearing_time != "" else ""}
       - "court_am": ${True if format_time(hearing_time, format='a')=='AM' and hearing_time != "" else ""}
       - "court_pm": ${True if format_time(hearing_time, format='a')=='PM' and hearing_time != "" else ""}
-      - "in_person": ${True if hearing_type == "person" else False}
-      - "remote": ${True if hearing_type == "remote" else False}
+      - "in_person": ${True if hearing_type['person'] else False}
+      - "remote": ${True if hearing_type['remote'] else False}
       - "courtroom_number": ${courtroom}
       - "courtroom_address_and_number": |
-          % if hearing_type == "person":
+          % if hearing_type['person']:
           ${court_name}, ${court_full_street}, ${court_csz}, Room ${courtroom}
           % endif
-      - "video_website": ${ remote_website if hearing_type == "remote" else ""}
-      - "log_in_info": ${ remote_login if hearing_type == "remote" else ""}
-      - "call_in_phone": ${ remote_phone if hearing_type == "remote" else ""}
+      - "video_website": ${ remote_website if hearing_type['remote'] else ""}
+      - "log_in_info": ${ remote_login if hearing_type['remote'] else ""}
+      - "call_in_phone": ${ remote_phone if hearing_type['remote'] else ""}
       - "clerk_phone": ${trial_court.phone}
       - "clerk_website": ${trial_court.website}
 ---
@@ -1371,6 +1371,7 @@ attachment:
       - "user_name": ${users[0].name_full()}
       - "user_address": ${users[0].address.on_one_line(bare=True)}
       - "user_phone": ${phone_number_formatted(users[0].phone_number) if users[0].phone_number != "" else ""}
+      - "user_email": ${users[0].email if users[0].has_email_address else ""}
 ---
 attachment:
   variable name: employer_sheriff[i]
@@ -1378,7 +1379,7 @@ attachment:
   filename: employer_sheriff
   skip undefined: True
   editable: True
-  pdf template file: citation_employer_sheriff.pdf
+  pdf template file: citation_employer_2026_sheriff.pdf
   fields:
       - "letter_date": ${""}
       - "county": ${""}
@@ -1404,6 +1405,7 @@ attachment:
       - "user_name": ${users[0].name_full()}
       - "user_address": ${users[0].address.on_one_line(bare=True)}
       - "user_phone": ${phone_number_formatted(users[0].phone_number) if users[0].phone_number != "" else ""}
+      - "user_email": ${users[0].email if users[0].has_email_address else ""}
 ---
 section: Judgment
 id: judgment review screen
@@ -1559,15 +1561,20 @@ review:
       % else:
       * Time: None entered
       % endif
-      % if hearing_type == "person":
+      % if hearing_type['person'] and not hearing_type['remote']:
       * Type: In person
+      % elif hearing_type['remote'] and not hearing_type['person']:
+      * Type: By phone or video
+      % elif hearing_type['remote'] and hearing_type['person']:
+      * Type: In person or by phone or video
+      % else:
+      * Type: None entered
+      % endif
       % if courtroom != "":
       * Courtroom: ${courtroom}
       % else:
       * Courtroom: None entered
       % endif
-      % elif hearing_type == "remote":
-      * Type: By phone or video
       % if remote_website != "":
       * Video conference website (URL): ${remote_website}
       % else:
@@ -1582,9 +1589,6 @@ review:
       * Call-in phone number: ${ phone_number_formatted(remote_phone) }
       % else:
       * Call-in phone number: None entered
-      % endif
-      % else:
-      * Type: None entered
       % endif
 ---
 section: Debtor, bank, and employer
@@ -1662,15 +1666,20 @@ review:
       % else:
       * Time: None entered
       % endif
-      % if hearing_type == "person":
+      % if hearing_type['person'] and not hearing_type['remote']:
       * Type: In person
+      % elif hearing_type['remote'] and not hearing_type['person']:
+      * Type: By phone or video
+      % elif hearing_type['remote'] and hearing_type['person']:
+      * Type: In person or by phone or video
+      % else:
+      * Type: None entered
+      % endif
       % if courtroom != "":
       * Courtroom: ${courtroom}
       % else:
       * Courtroom: None entered
       % endif
-      % elif hearing_type == "remote":
-      * Type: By phone or video
       % if remote_website != "":
       * Video conference website (URL): ${remote_website}
       % else:
@@ -1685,9 +1694,6 @@ review:
       * Call-in phone number: ${ phone_number_formatted(remote_phone) }
       % else:
       * Call-in phone number: None entered
-      % endif
-      % else:
-      * Type: None entered
       % endif
 ---
 section: About you
@@ -1882,15 +1888,20 @@ review:
       % else:
       * Time: None entered
       % endif
-      % if hearing_type == "person":
+      % if hearing_type['person'] and not hearing_type['remote']:
       * Type: In person
+      % elif hearing_type['remote'] and not hearing_type['person']:
+      * Type: By phone or video
+      % elif hearing_type['remote'] and hearing_type['person']:
+      * Type: In person or by phone or video
+      % else:
+      * Type: None entered
+      % endif
       % if courtroom != "":
       * Courtroom: ${courtroom}
       % else:
       * Courtroom: None entered
       % endif
-      % elif hearing_type == "remote":
-      * Type: By phone or video
       % if remote_website != "":
       * Video conference website (URL): ${remote_website}
       % else:
@@ -1905,9 +1916,6 @@ review:
       * Call-in phone number: ${ phone_number_formatted(remote_phone) }
       % else:
       * Call-in phone number: None entered
-      % endif
-      % else:
-      * Type: None entered
       % endif
   - note: |
       <h4>Debtor, bank, and employer</h4>
