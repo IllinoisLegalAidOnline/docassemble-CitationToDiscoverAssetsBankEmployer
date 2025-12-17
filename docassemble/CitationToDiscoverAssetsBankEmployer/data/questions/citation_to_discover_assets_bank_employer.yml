@@ -1126,7 +1126,7 @@ attachment:
   filename: bank_instructions
   skip undefined: True
   editable: False
-  pdf template file: citation_bank_2026_instructions.pdf
+  pdf template file: citation_bank_instructions.pdf
   fields:
       - "fake": ${ "" } 
 ---
@@ -1136,7 +1136,7 @@ attachment:
   filename: employer_instructions
   skip undefined: True
   editable: False
-  pdf template file: citation_employer_2026_instructions.pdf
+  pdf template file: citation_employer_instructions.pdf
   fields:
       - "fake": ${ "" } 
 ---
@@ -1146,7 +1146,7 @@ attachment:
   filename: bank_citation_part_1
   skip undefined: True
   editable: True
-  pdf template file: citation_discover_bank_2026_Part1.pdf
+  pdf template file: citation_discover_bank_Part1.pdf
   fields:
       - "county_1": ${capitalize(trial_court.address.county)} 
       - "plaintiff_name_1": |
@@ -1186,8 +1186,8 @@ attachment:
           % endif
       - "video_website": ${ remote_website if hearing_type['remote'] else ""}
       - "log_in_info": ${ remote_login if hearing_type['remote'] else ""}
-      - "call_in_phone": ${ remote_phone if hearing_type['remote'] else ""}
-      - "clerk_phone": ${trial_court.phone}
+      - "call_in_phone": ${ phone_number_formatted(remote_phone) if hearing_type['remote'] else ""}
+      - "clerk_phone": ${phone_number_formatted(trial_court.phone)}
       - "clerk_website": ${trial_court.website}
 ---
 attachment:
@@ -1196,7 +1196,7 @@ attachment:
   filename: bank_citation_part_2
   skip undefined: True
   editable: False
-  pdf template file: citation_discover_bank_2026_Part2.pdf
+  pdf template file: citation_discover_bank_Part2.pdf
   fields:
       - "case_number_3": ${case_number}
       - "case_number_4": ${case_number}
@@ -1218,7 +1218,7 @@ attachment:
           % else:
           ${users.full_names()}
           % endif
-      - "other_docs": ${debtor_docs if any_debtor_docs else ""}
+      - "other_docs": ${debtor_docs.replace("\n", " ").replace("\r", " ") if any_debtor_docs else ""}
       - "e_signature_1": ${users[0].name_full() if e_signature else ""}
       - "user_name_1": ${users[0].name_full()}
       - "user_address_1": ${users[0].address.on_one_line(bare=True)}
@@ -1249,7 +1249,7 @@ attachment:
   filename: employer_citation_part_1
   skip undefined: True
   editable: True
-  pdf template file: citation_discover_employer_2026_Part1.pdf
+  pdf template file: citation_discover_employer_Part1.pdf
   fields:
       - "county_1": ${capitalize(trial_court.address.county)}
       - "plaintiff_name_1": |
@@ -1289,8 +1289,8 @@ attachment:
           % endif
       - "video_website": ${ remote_website if hearing_type['remote'] else ""}
       - "log_in_info": ${ remote_login if hearing_type['remote'] else ""}
-      - "call_in_phone": ${ remote_phone if hearing_type['remote'] else ""}
-      - "clerk_phone": ${trial_court.phone}
+      - "call_in_phone": ${ phone_number_formatted(remote_phone) if hearing_type['remote'] else ""}
+      - "clerk_phone": ${phone_number_formatted(trial_court.phone)}
       - "clerk_website": ${trial_court.website}
 ---
 attachment:
@@ -1299,7 +1299,7 @@ attachment:
   filename: employer_citation_part_2
   skip undefined: True
   editable: False
-  pdf template file: citation_discover_employer_2026_Part2.pdf
+  pdf template file: citation_discover_employer_Part2.pdf
   fields:
       - "case_number_3": ${case_number}
       - "case_number_4": ${case_number}
@@ -1345,7 +1345,7 @@ attachment:
   filename: bank_sheriff
   skip undefined: True
   editable: True
-  pdf template file: citation_bank_2026_sheriff.pdf
+  pdf template file: citation_bank_sheriff.pdf
   fields:
       - "letter_date": ${""}
       - "county": ${""}
@@ -1379,7 +1379,7 @@ attachment:
   filename: employer_sheriff
   skip undefined: True
   editable: True
-  pdf template file: citation_employer_2026_sheriff.pdf
+  pdf template file: citation_employer_sheriff.pdf
   fields:
       - "letter_date": ${""}
       - "county": ${""}
@@ -1680,19 +1680,19 @@ review:
       % else:
       * Courtroom: None entered
       % endif
-      % if remote_website != "":
+      % if hearing_type['remote'] and remote_website != "":
       * Video conference website (URL): ${remote_website}
-      % else:
+      % elif hearing_type['remote']:
       * Video conference website (URL): None entered
       % endif
-      % if remote_login != "":
+      % if hearing_type['remote'] and remote_login != "":
       * Log-in information: ${remote_login}
-      % else:
+      % elif hearing_type['remote']:
       * Log-in information: None entered
       % endif
-      % if remote_phone != "":
+      % if hearing_type['remote'] and remote_phone != "":
       * Call-in phone number: ${ phone_number_formatted(remote_phone) }
-      % else:
+      % elif hearing_type['remote']:
       * Call-in phone number: None entered
       % endif
 ---
@@ -1902,19 +1902,19 @@ review:
       % else:
       * Courtroom: None entered
       % endif
-      % if remote_website != "":
+      % if hearing_type['remote'] and remote_website != "":
       * Video conference website (URL): ${remote_website}
-      % else:
+      % elif hearing_type['remote']:
       * Video conference website (URL): None entered
       % endif
-      % if remote_login != "":
+      % if hearing_type['remote'] and remote_login != "":
       * Log-in information: ${remote_login}
-      % else:
+      % elif hearing_type['remote']:
       * Log-in information: None entered
       % endif
-      % if remote_phone != "":
+      % if hearing_type['remote'] and remote_phone != "":
       * Call-in phone number: ${ phone_number_formatted(remote_phone) }
-      % else:
+      % elif hearing_type['remote']:
       * Call-in phone number: None entered
       % endif
   - note: |
