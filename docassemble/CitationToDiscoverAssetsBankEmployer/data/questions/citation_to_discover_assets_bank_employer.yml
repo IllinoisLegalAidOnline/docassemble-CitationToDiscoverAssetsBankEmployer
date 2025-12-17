@@ -58,6 +58,7 @@ code: |
         if renewal_date > judgment_date.plus(years=10):
           if is_consumer_debt:
             consumer_debt_kickout 
+  is_consumer_debt
   set_progress(20)
   if judgment_date > today().minus(days=30):
     wait_note
@@ -83,6 +84,7 @@ code: |
       bank.address.address
       bank.service
       other_parties[0].ssn
+      any_debtor_docs
     elif collection_source["Employer"]:
       out_of_state_bank_note
     else:
@@ -203,14 +205,16 @@ subquestion: |
   * A *Citation to Discover Assets to Debtor's Bank* tells the debtor's bank to answer questions about the debtor's property and income. 
   * A *Citation to Discover Assets to Debtor's Employer* tells the debtor's employer to answer questions about the debtor's wages.  
 
-  **Note:** This citation does not apply to the debtor. If you want the debtor to answer questions about their property and income, you can use ILAO's [**Citation to discover assets to debtor Easy Form**](https://www.illinoislegalaid.org/node/123576).
+  **Note:** This citation does not go **directly** to the debtor. If you want the debtor to answer questions about their property and income, you can use ILAO's [**Citation to discover assets to debtor Easy Form**](https://www.illinoislegalaid.org/node/123576).
   
-  After the bank or employer answers your questions, the court may order bank **{garnishment}** or wage **{garnishment}**.
+  After the bank or employer answers your questions, the court may order **{bank garnishment}** or **{wage garnishment}**.
   
   You will need to serve the bank or employer with the citation. You can use a sheriff or private process server to do this. To learn more, read ILAO's article about [**serving a summons**](https://www.illinoislegalaid.org/node/147221).
 terms:
-  - garnishment: |
-      **Garnishment** is when someone's money is taken out of their paycheck or bank account to pay for a debt they owe.
+  - wage garnishment: |
+      **Wage garnishment** is when someone's money is taken out of their paycheck to pay for a debt they owe.
+  - bank garnishment: |
+      **Bank garnishment** is when someone's money is taken out of their bank account to pay for a debt they owe.
 ---
 sets:
   - other_parties[i].name.first
@@ -352,7 +356,7 @@ subquestion: |
 ---
 id: judgment amount
 question: |
-  Details about the amount ${other_parties[0].name_full()} still owes you
+  Details about what ${other_parties[0].name_full()} owes you
 subquestion: | 
   % if (judgment_date > as_datetime('12/31/2019')):
   For judgments entered after 2019, the simple interest rate on the unpaid amount can vary. If the judgment is a **{consumer debt judgment}** of $25,000 or less, the simple interest rate is 5% per year. Otherwise, the simple interest rate is 9% per year. 
@@ -388,10 +392,10 @@ fields:
     datatype: currency
     step: 0.01
     help: |
-      % if (judgment_date > as_datetime('12/31/2019')):
-      The rate for post-judgment simple interest is either 5% per year or 9% per year on the unpaid amount of the judgment. The rate is 5% for consumer debt judgments for $25,000 or less, and 9% for other judgments. This program does not calculate how much interest you are owed.
+      % if (judgment_date > as_datetime('12/31/2019')) and is_consumer_debt:
+      The rate for post-judgment simple interest on a consumer debt judgment under $25,000 is 5%. For larger judgments, the interest rate is 9%. This program **does not calculate** how much interest you are owed.
       % else:
-      The rate for post-judgment simple interest is 9% per year on the unpaid amount of the judgment. This program does not calculate how much interest you are owed.
+      The rate for post-judgment simple interest is 9% per year on the unpaid amount of the judgment. This program **does not calculate** how much interest you are owed.
       % endif
   - Amount already paid: already_paid_amount
     required: False
@@ -416,11 +420,11 @@ content: |
   % if (judgment_date > as_datetime('12/31/2019')):
   The interest rate is calculated as simple interest on the unpaid amount.
   
-  Imagine you had a judgment of $1,000 two years ago, and it was not for consumer debt, the simple interest rate would be 9%. You would multiply $1,000 x 9% to get $90 for each year. That would bring the total to $1,180. That’s the amount you can ask for in your citation.
+  If you had a judgment of $1,000 two years ago, and it was not for consumer debt, the simple interest rate would be 9%. You would multiply $1,000 x 9% to get $90 for each year. That would bring the interest to a total of $180. That's the amount of interest you can ask for in your citation.
   % else:
   The 9% interest rate is calculated as simple interest on the unpaid amount.
 
-  If you had a judgment of $1,000 two years ago, and it was not for consumer debt, the simple interest rate would be 9%. You would multiply $1,000 x 9% to get $90 for each year. That would bring the total to $1,180. That’s the amount you can ask for in your citation.
+  If you had a judgment of $1,000 two years ago, and it was not for consumer debt, the simple interest rate would be 9%. You would multiply $1,000 x 9% to get $90 for each year. That would bring the interest to a total of $180. That's the amount of interest you can ask for in your citation.
   % endif
 ---
 depends on:
@@ -457,6 +461,25 @@ content: |
   The total amount owed would be $1,000 plus $90 plus $90, which is $1,180.
 
   If ${other_parties[0].name_full()} had already paid you $300 for that judgment, you would subtract that from the total amount owed. The amount still owed would be $1,180 minus $300, which is $880.
+---
+id: any debtor docs
+question: |
+  Do you want ${bank.name_full()} to bring any specific documents to court?
+subquestion: |
+  The citation will tell ${bank.name_full()} to bring information about any accounts, property, or safety deposit boxes ${other_parties[0].name_full()} has with them.
+
+  You only need to click **Yes** if you want ${bank.name_full()} to bring something in addition to the above information.
+fields:
+  - Should ${bank.name_full()} bring specific documents?: any_debtor_docs
+    datatype: yesnoradio
+  - What documents should they bring?: debtor_docs
+    input type: area
+    rows: 8
+    maxlength: 300
+    show if: any_debtor_docs
+  - note: |
+      The form has space for about **300 characters**, including spaces.
+    show if: any_debtor_docs
 ---
 id: party label
 question: |
@@ -640,7 +663,7 @@ subquestion: |
   The case number is in the caption near the top of the first page of the court forms.
 fields:
   - Case number: case_number
-    max: 20
+    maxlength: 21
 ---
 id: collection source
 question: |
@@ -720,7 +743,7 @@ question: |
 subquestion: |
   If you do not know, you can leave this blank.
 fields:
-  - SSN: other_parties[0].ssn
+  - Last 4 digits of ${other_parties[0].name_full()}'s SSN: other_parties[0].ssn
     required: False
     maxlength: 4
 ---
@@ -869,22 +892,31 @@ fields:
     datatype: time
     required: False
   - Hearing type: hearing_type
-    input type: radio
+    datatype: checkboxes
     required: False
+    none of the above: False
     choices:
       - In person: person
       - By phone or video: remote
   - Courtroom: courtroom
     maxlength: 10
     required: False
-    js show if:
-     val('hearing_type') === "person"
-  - Instructions for attending by phone or video: remote_instructions
-    required: False
+  - Video conference website (URL): remote_website
+    maxlength: 100
     input type: area
-    maxlength: 120
-    js show if:
-      val('hearing_type') === "remote"
+    rows: 2
+    required: False
+    show if: hearing_type['remote']
+  - Video conference log-in information (Meeting ID, password, etc.): remote_login
+    maxlength: 100
+    input type: area
+    rows: 2
+    required: False
+    show if: hearing_type['remote']
+  - Call-in phone number for remote appearance: remote_phone
+    datatype: al_international_phone
+    required: False
+    show if: hearing_type['remote']
 ---
 id: user address
 question: |
@@ -1046,11 +1078,16 @@ content: |
 objects:
   - bank_instructions: ALDocument.using(title="Instructions (Bank)", filename="bank_instructions.pdf", has_addendum=False)
   - employer_instructions: ALDocument.using(title="Instructions (Employer)", filename="employer_instructions.pdf", has_addendum=False)
-  - bank_citation: ALDocument.using(title="Citation to Discover Assets to Debtor's Bank", filename="bank_citation.pdf", has_addendum=False)
-  - employer_citation: ALDocument.using(title="Citation to Discover Assets to Debtor's Employer", filename="employer_citation.pdf", has_addendum=False)
+  - bank_citation_part_1: ALDocument.using(title="Citation to Discover Assets to Debtor's Bank", filename="bank_citation_part_1.pdf", has_addendum=False)
+  - bank_citation_part_2: ALDocument.using(title="Citation to Discover Assets to Debtor's Bank", filename="bank_citation_part_2.pdf", has_addendum=False)
+  - employer_citation_part_1: ALDocument.using(title="Citation to Discover Assets to Debtor's Employer", filename="employer_citation_part_1.pdf", has_addendum=False)
+  - employer_citation_part_2: ALDocument.using(title="Citation to Discover Assets to Debtor's Employer", filename="employer_citation_part_2.pdf", has_addendum=False)
   - bank_sheriff: ALDocument.using(title="Letter to the Sheriff for Bank (Optional)", filename="bank_letter_to_sheriff.pdf", has_addendum=False)
   - employer_sheriff: ALDocument.using(title="Letter to the Sheriff for Employer (Optional)", filename="employer_letter_to_sheriff.pdf", has_addendum=False)
 ---
+objects:
+  - bank_citation: ALDocumentBundle.using(elements=[bank_citation_part_1, bank_citation_part_2], filename="citation_to_discover_assets_to_debtors_bank.pdf", title = "Citation to Discover Assets to Debtor's Bank")
+  - employer_citation: ALDocumentBundle.using(elements=[employer_citation_part_1, employer_citation_part_2], filename="citation_to_discover_assets_to_debtors_employer.pdf", title = "Citation to Discover Assets to Debtor's Employer")
 ---
 objects:
   - al_user_bundle: ALDocumentBundle.using(elements=[bank_instructions, bank_citation, bank_sheriff, employer_instructions, employer_citation, employer_sheriff], filename="citation_to_discover_assets_to_bank_or_employer.pdf", title="All forms")
@@ -1059,19 +1096,27 @@ objects:
 code: |
   if collection_source["Bank"] and bank.in_illinois:
     bank_instructions.enabled = True
+    bank_citation_part_1.enabled = True
+    bank_citation_part_2.enabled = True
     bank_citation.enabled = True
     bank_sheriff.enabled = True
   else:
     bank_instructions.enabled = False
+    bank_citation_part_1.enabled = False
+    bank_citation_part_2.enabled = False
     bank_citation.enabled = False
     bank_sheriff.enabled = False
 
   if collection_source["Employer"] and employer.in_illinois:
     employer_instructions.enabled = True
+    employer_citation_part_1.enabled = True
+    employer_citation_part_2.enabled = True
     employer_citation.enabled = True
     employer_sheriff.enabled = True
   else:
     employer_instructions.enabled = False
+    employer_citation_part_1.enabled = False
+    employer_citation_part_2.enabled = False
     employer_citation.enabled = False
     employer_sheriff.enabled = False
 ---
@@ -1096,123 +1141,118 @@ attachment:
       - "fake": ${ "" } 
 ---
 attachment:
-  variable name: bank_citation[i]
-  name: bank_citation
-  filename: bank_citation
+  variable name: bank_citation_part_1[i]
+  name: bank_citation_part_1
+  filename: bank_citation_part_1
   skip undefined: True
-  editable: False
-  pdf template file: citation_discover_bank.pdf
+  editable: True
+  pdf template file: citation_discover_bank_Part1.pdf
   fields:
-      - "county_1": ${trial_court.address.county.upper()}
-      - "county_2": ${trial_court.address.county.upper()}
+      - "county_1": ${capitalize(trial_court.address.county)} 
       - "plaintiff_name_1": |
           % if party_label == "plaintiff" or party_label == "petitioner":
           ${users.full_names()}
           % else:
           ${other_parties.full_names()}
           % endif
-      - "plaintiff_name_2": |
-          % if party_label == "plaintiff" or party_label == "petitioner":
-          ${users.full_names()}
-          % else:
-          ${other_parties.full_names()}
-          % endif
       - "defendant_name_1": |
-          % if party_label == "plaintiff" or party_label == "petitioner":
-          ${other_parties.full_names()}
-          % else:
-          ${users.full_names()}
-          % endif
-      - "defendant_name_2": |
           % if party_label == "plaintiff" or party_label == "petitioner":
           ${other_parties.full_names()}
           % else:
           ${users.full_names()}
           % endif
       - "bank_name_1": ${bank.name.first}
-      - "bank_name_2": ${bank.name.first}
-      - "bank_name_3": ${bank.name.first}
       - "bank_street_1": ${bank.address.line_one(bare=True)}
-      - "bank_street_2": ${bank.address.line_one(bare=True)}
       - "bank_csz_1": ${bank.address.line_two()}
-      - "bank_csz_2": ${bank.address.line_two()}
       - "case_number_1": ${case_number}
-      - "case_number_2": ${case_number}
-      - "case_number_3": ${case_number}
-      - "case_number_4": ${case_number}
-      - "case_number_5": ${case_number}
-      - "case_number_6": ${case_number}
-      - "case_number_7": ${case_number}
+      - "case_number_2": ${case_number}     
       - "debtor_name_1": |
           % if other_parties[0].person_type == "business" and other_parties[0].has_agent:
           ${agent.name_full()} (registered agent for ${other_parties[0].name_full()})
           % else:
           ${other_parties[0].name_full()}
           % endif
-      - "debtor_name_2": |
-          % if other_parties[0].person_type == "business" and other_parties[0].has_agent:
-          ${agent.name_full()} (registered agent for ${other_parties[0].name_full()})
-          % else:
-          ${other_parties[0].name_full()}
-          % endif
-      - "debtor_name_3": |
-          % if other_parties[0].person_type == "business" and other_parties[0].has_agent:
-          ${agent.name_full()} (registered agent for ${other_parties[0].name_full()})
-          % else:
-          ${other_parties[0].name_full()}
-          % endif
-      - "debtor_street": ${other_parties[0].address.line_one(bare=True)}
-      - "debtor_csz": ${other_parties[0].address.line_two()}
+      - "debtor_address_1": ${other_parties[0].address.on_one_line(bare=True)}
       - "court_date": ${hearing_date}
       - "court_time": ${format_time(hearing_time, format='h:mm') if hearing_time != "" else ""}
       - "court_am": ${True if format_time(hearing_time, format='a')=='AM' and hearing_time != "" else ""}
       - "court_pm": ${True if format_time(hearing_time, format='a')=='PM' and hearing_time != "" else ""}
-      - "in_person": ${True if hearing_type == "person" else False}
-      - "remote": ${True if hearing_type == "remote" else False}
-      - "courtroom_number": ${courtroom if hearing_type == "person" else ""}
-      - "courtroom_street": |
-          % if hearing_type == "person":
-          ${court_name}, ${court_full_street}
+      - "in_person": ${True if hearing_type['person'] else False}
+      - "remote": ${True if hearing_type['remote'] else False}
+      - "courtroom_number": ${courtroom}
+      - "courtroom_address_and_number": |
+          % if hearing_type['person']:
+          ${court_name}, ${court_full_street}, ${court_csz}, Room ${courtroom}
           % endif
-      - "courtroom_csz": ${court_csz if hearing_type == "person" else ""}
-      - "remote_instructions": ${remote_instructions if hearing_type == "remote" else ""}
-      - "clerk_phone": ${trial_court.phone if hearing_type == "remote" else ""}
-      - "clerk_website": ${trial_court.website if hearing_type == "remote" else ""}
+      - "video_website": ${ remote_website if hearing_type['remote'] else ""}
+      - "log_in_info": ${ remote_login if hearing_type['remote'] else ""}
+      - "call_in_phone": ${ phone_number_formatted(remote_phone) if hearing_type['remote'] else ""}
+      - "clerk_phone": ${phone_number_formatted(trial_court.phone)}
+      - "clerk_website": ${trial_court.website}
+---
+attachment:
+  variable name: bank_citation_part_2[i]
+  name: bank_citation_part_2
+  filename: bank_citation_part_2
+  skip undefined: True
+  editable: False
+  pdf template file: citation_discover_bank_Part2.pdf
+  fields:
+      - "case_number_3": ${case_number}
+      - "case_number_4": ${case_number}
+      - "case_number_5": ${case_number}
+      - "case_number_6": ${case_number}
+      - "case_number_7": ${case_number}
+      - "case_number_8": ${case_number}
+      - "case_number_9": ${case_number}
+      - "county_2": ${capitalize(trial_court.address.county)}
+      - "plaintiff_name_2": |
+          % if party_label == "plaintiff" or party_label == "petitioner":
+          ${users.full_names()}
+          % else:
+          ${other_parties.full_names()}
+          % endif
+      - "defendant_name_2": |
+          % if party_label == "plaintiff" or party_label == "petitioner":
+          ${other_parties.full_names()}
+          % else:
+          ${users.full_names()}
+          % endif
+      - "other_docs": ${debtor_docs.replace("\n", " ").replace("\r", " ") if any_debtor_docs else ""}
+      - "e_signature_1": ${users[0].name_full() if e_signature else ""}
+      - "user_name_1": ${users[0].name_full()}
+      - "user_address_1": ${users[0].address.on_one_line(bare=True)}
+      - "user_email_1": ${users[0].email if users[0].has_email_address else ""}
+      - "user_phone_1": ${phone_number_formatted(users[0].phone_number) if users[0].phone_number != "" else ""}
+      - "debtor_ssn": ${other_parties[0].ssn}
+      - "for_self": ${True}
+      - "bank_name_2": ${bank.name.first}
+      - "bank_name_3": ${bank.name.first}
+      - "bank_address_2": ${bank.address.on_one_line(bare=True)}
+      - "debtor_name_2": ${other_parties[0].name_full()}
+      - "debtor_name_3": ${other_parties[0].name_full()}
+      - "judgment_amount_1": ${currency(judgment_amount, symbol=u'')}
+      - "judgment_amount_2": ${currency(judgment_amount, symbol=u'')}
+      - "current_amount": ${currency(amount_still_owed, symbol=u'') + "."}
+      - "is_consumer": ${is_consumer_debt}
+      - "not_consumer": ${True if not is_consumer_debt else False}  
       - "judgment_date": |
           % if (today().minus(years=7) > judgment_date) and been_revived:
           ${renewal_date}
           % else:
           ${judgment_date}
           % endif
-      - "judgment_amount_1": ${currency(judgment_amount, symbol=u'')}
-      - "judgment_amount_2": ${currency(judgment_amount, symbol=u'')}
-      - "current_amount": ${currency(amount_still_owed, symbol=u'')}
-      - "e_signature_1": ${users[0].name_full() if e_signature else ""}
-      - "user_name_1": ${users[0].name_full()}
-      - "user_street_1": ${users[0].address.line_one(bare=True)}
-      - "user_csz_1": ${users[0].address.line_two()}
-      - "user_email_1": ${users[0].email if users[0].has_email_address else ""}
-      - "user_phone_1": ${phone_number_formatted(users[0].phone_number) if users[0].phone_number != "" else ""}
-      - "attorney_number_1" : ${""}
-      - "debtor_ssn": ${other_parties[0].ssn}
 ---
 attachment:
-  variable name: employer_citation[i]
-  name: employer_citation
-  filename: employer_citation
+  variable name: employer_citation_part_1[i]
+  name: employer_citation_part_1
+  filename: employer_citation_part_1
   skip undefined: True
-  editable: False
-  pdf template file: citation_discover_employer.pdf
+  editable: True
+  pdf template file: citation_discover_employer_Part1.pdf
   fields:
-      - "county_1": ${trial_court.address.county.upper()}
-      - "county_2": ${trial_court.address.county.upper()}
+      - "county_1": ${capitalize(trial_court.address.county)}
       - "plaintiff_name_1": |
-          % if party_label == "plaintiff" or party_label == "petitioner":
-          ${users.full_names()}
-          % else:
-          ${other_parties.full_names()}
-          % endif
-      - "plaintiff_name_2": |
           % if party_label == "plaintiff" or party_label == "petitioner":
           ${users.full_names()}
           % else:
@@ -1224,51 +1264,72 @@ attachment:
           % else:
           ${users.full_names()}
           % endif
-      - "defendant_name_2": |
-          % if party_label == "plaintiff" or party_label == "petitioner":
-          ${other_parties.full_names()}
-          % else:
-          ${users.full_names()}
-          % endif
       - "employer_name_1": ${employer.name_full()}
-      - "employer_name_2": ${employer.name_full()}
       - "employer_street_1": ${employer.address.line_one(bare=True)}
       - "employer_csz_1": ${employer.address.line_two()}
       - "case_number_1": ${case_number}
       - "case_number_2": ${case_number}
-      - "case_number_3": ${case_number}
-      - "case_number_4": ${case_number}
-      - "case_number_5": ${case_number}
-      - "case_number_6": ${case_number}
       - "debtor_name_1": |
           % if other_parties[0].person_type == "business" and other_parties[0].has_agent:
           ${agent.name_full()} (registered agent for ${other_parties[0].name_full()})
           % else:
           ${other_parties[0].name_full()}
           % endif
-      - "debtor_name_2": |
-          % if other_parties[0].person_type == "business" and other_parties[0].has_agent:
-          ${agent.name_full()} (registered agent for ${other_parties[0].name_full()})
-          % else:
-          ${other_parties[0].name_full()}
-          % endif
-      - "debtor_street_1": ${other_parties[0].address.line_one(bare=True)}
-      - "debtor_csz_1": ${other_parties[0].address.line_two()}
+      - "debtor_address_1": ${other_parties[0].address.on_one_line(bare=True)}
       - "court_date": ${hearing_date}
       - "court_time": ${format_time(hearing_time, format='h:mm') if hearing_time != "" else ""}
       - "court_am": ${True if format_time(hearing_time, format='a')=='AM' and hearing_time != "" else ""}
       - "court_pm": ${True if format_time(hearing_time, format='a')=='PM' and hearing_time != "" else ""}
-      - "in_person": ${True if hearing_type == "person" else False}
-      - "remotely": ${True if hearing_type == "remote" else False}
-      - "courtroom_number": ${courtroom if hearing_type == "person" else ""}
-      - "courtroom_street": |
-          % if hearing_type == "person":
-          ${court_name}, ${court_full_street}
+      - "in_person": ${True if hearing_type['person'] else False}
+      - "remote": ${True if hearing_type['remote'] else False}
+      - "courtroom_number": ${courtroom}
+      - "courtroom_address_and_number": |
+          % if hearing_type['person']:
+          ${court_name}, ${court_full_street}, ${court_csz}, Room ${courtroom}
           % endif
-      - "courtroom_csz": ${court_csz if hearing_type == "person" else ""}
-      - "remote_instructions": ${remote_instructions if hearing_type == "remote" else ""}
-      - "clerk_phone": ${trial_court.phone if hearing_type == "remote" else ""}
-      - "clerk_website": ${trial_court.website if hearing_type == "remote" else ""}
+      - "video_website": ${ remote_website if hearing_type['remote'] else ""}
+      - "log_in_info": ${ remote_login if hearing_type['remote'] else ""}
+      - "call_in_phone": ${ phone_number_formatted(remote_phone) if hearing_type['remote'] else ""}
+      - "clerk_phone": ${phone_number_formatted(trial_court.phone)}
+      - "clerk_website": ${trial_court.website}
+---
+attachment:
+  variable name: employer_citation_part_2[i]
+  name: employer_citation_part_2
+  filename: employer_citation_part_2
+  skip undefined: True
+  editable: False
+  pdf template file: citation_discover_employer_Part2.pdf
+  fields:
+      - "case_number_3": ${case_number}
+      - "case_number_4": ${case_number}
+      - "case_number_5": ${case_number}
+      - "case_number_6": ${case_number}
+      - "case_number_7": ${case_number}
+      - "case_number_8": ${case_number}
+      - "debtor_name_2": ${other_parties[0].name_full()}
+      - "current_amount": ${currency(amount_still_owed, symbol=u'')}
+      - "is_consumer": ${is_consumer_debt}
+      - "not_consumer": ${True if not is_consumer_debt else False}
+      - "e_signature_1": ${users[0].name_full() if e_signature else ""}
+      - "user_name_1": ${users[0].name_full()}
+      - "user_address_1": ${users[0].address.on_one_line(bare=True)}
+      - "user_email_1": ${users[0].email if users[0].has_email_address else ""}
+      - "user_phone_1": ${phone_number_formatted(users[0].phone_number) if users[0].phone_number != "" else ""}
+      - "for_self": ${True}
+      - "defendant_name_2": |
+          % if party_label == "plaintiff" or party_label == "petitioner":
+          ${other_parties.full_names()}
+          % else:
+          ${users.full_names()}
+          % endif
+      - "plaintiff_name_2": |
+          % if party_label == "plaintiff" or party_label == "petitioner":
+          ${users.full_names()}
+          % else:
+          ${other_parties.full_names()}
+          % endif
+      - "employer_name_2": ${employer.name_full()}
       - "judgment_date": |
           % if (today().minus(years=7) > judgment_date) and been_revived:
           ${renewal_date}
@@ -1276,14 +1337,7 @@ attachment:
           ${judgment_date}
           % endif
       - "judgment_amount_1": ${currency(judgment_amount, symbol=u'')}
-      - "current_amount": ${currency(amount_still_owed, symbol=u'')}
-      - "e_signature": ${users[0].name_full() if e_signature else ""}
-      - "user_name_1": ${users[0].name_full()}
-      - "user_street_1": ${users[0].address.line_one(bare=True)}
-      - "user_csz_1": ${users[0].address.line_two()}
-      - "user_email_1": ${users[0].email if users[0].has_email_address else ""}
-      - "user_phone_1": ${phone_number_formatted(users[0].phone_number) if users[0].phone_number != "" else ""}
-      - "attorney_number" : ${""}
+      - "county_2": ${capitalize(trial_court.address.county)}
 ---
 attachment:
   variable name: bank_sheriff[i]
@@ -1315,9 +1369,9 @@ attachment:
       - "bank_name": ${""}
       - "bank_address": ${""}
       - "user_name": ${users[0].name_full()}
-      - "user_street": ${users[0].address.line_one(bare=True)}
-      - "user_csz": ${users[0].address.line_two()}
+      - "user_address": ${users[0].address.on_one_line(bare=True)}
       - "user_phone": ${phone_number_formatted(users[0].phone_number) if users[0].phone_number != "" else ""}
+      - "user_email": ${users[0].email if users[0].has_email_address else ""}
 ---
 attachment:
   variable name: employer_sheriff[i]
@@ -1349,9 +1403,9 @@ attachment:
       - "employer_name": ${""}
       - "employer_address": ${""}
       - "user_name": ${users[0].name_full()}
-      - "user_street": ${users[0].address.line_one(bare=True)}
-      - "user_csz": ${users[0].address.line_two()}
+      - "user_address": ${users[0].address.on_one_line(bare=True)}
       - "user_phone": ${phone_number_formatted(users[0].phone_number) if users[0].phone_number != "" else ""}
+      - "user_email": ${users[0].email if users[0].has_email_address else ""}
 ---
 section: Judgment
 id: judgment review screen
@@ -1383,6 +1437,10 @@ review:
     button: |
       **${other_parties[0].name_full()}'s address:**
       ${other_parties[0].address.on_one_line(bare=True)}
+  - Edit: is_consumer_debt
+    button: |
+      **Was the judgment for consumer debt?**
+      ${word(yesno(is_consumer_debt))}
   - Edit: judgment_amount
     button: |
       **Original judgment amount:**
@@ -1503,22 +1561,34 @@ review:
       % else:
       * Time: None entered
       % endif
-      % if hearing_type == "person":
+      % if hearing_type['person'] and not hearing_type['remote']:
       * Type: In person
+      % elif hearing_type['remote'] and not hearing_type['person']:
+      * Type: By phone or video
+      % elif hearing_type['remote'] and hearing_type['person']:
+      * Type: In person or by phone or video
+      % else:
+      * Type: None entered
+      % endif
       % if courtroom != "":
       * Courtroom: ${courtroom}
       % else:
       * Courtroom: None entered
       % endif
-      % elif hearing_type == "remote":
-      * Type: By phone or video
-      % if remote_instructions != "":
-      * Instructions for attending: ${remote_instructions}
+      % if remote_website != "":
+      * Video conference website (URL): ${remote_website}
       % else:
-      * Instructions for attending: None entered
+      * Video conference website (URL): None entered
       % endif
+      % if remote_login != "":
+      * Log-in information: ${remote_login}
       % else:
-      * Type: None entered
+      * Log-in information: None entered
+      % endif
+      % if remote_phone != "":
+      * Call-in phone number: ${ phone_number_formatted(remote_phone) }
+      % else:
+      * Call-in phone number: None entered
       % endif
 ---
 section: Debtor, bank, and employer
@@ -1562,6 +1632,16 @@ review:
       **Last 4 digits of ${other_parties[0].name_full()}'s Social Security Number:**
       ${other_parties[0].ssn}
     show if: collection_source["Bank"]
+  - Edit: any_debtor_docs
+    button: |
+      % if any_debtor_docs:
+      **What specific documents should ${bank.name_full()} bring to court?**
+      ${debtor_docs}
+      % else:
+      **Do you want ${bank.name_full()} to bring specific documents to court?** 
+      No
+      % endif
+    show if: collection_source["Bank"]
   - Edit: employer.name.first
     button: |
       **${other_parties[0].name_full()}'s employer:**
@@ -1586,22 +1666,34 @@ review:
       % else:
       * Time: None entered
       % endif
-      % if hearing_type == "person":
+      % if hearing_type['person'] and not hearing_type['remote']:
       * Type: In person
+      % elif hearing_type['remote'] and not hearing_type['person']:
+      * Type: By phone or video
+      % elif hearing_type['remote'] and hearing_type['person']:
+      * Type: In person or by phone or video
+      % else:
+      * Type: None entered
+      % endif
       % if courtroom != "":
       * Courtroom: ${courtroom}
       % else:
       * Courtroom: None entered
       % endif
-      % elif hearing_type == "remote":
-      * Type: By phone or video
-      % if remote_instructions != "":
-      * Instructions for attending: ${remote_instructions}
-      % else:
-      * Instructions for attending: None entered
+      % if hearing_type['remote'] and remote_website != "":
+      * Video conference website (URL): ${remote_website}
+      % elif hearing_type['remote']:
+      * Video conference website (URL): None entered
       % endif
-      % else:
-      * Type: None entered
+      % if hearing_type['remote'] and remote_login != "":
+      * Log-in information: ${remote_login}
+      % elif hearing_type['remote']:
+      * Log-in information: None entered
+      % endif
+      % if hearing_type['remote'] and remote_phone != "":
+      * Call-in phone number: ${ phone_number_formatted(remote_phone) }
+      % elif hearing_type['remote']:
+      * Call-in phone number: None entered
       % endif
 ---
 section: About you
@@ -1719,6 +1811,10 @@ review:
     button: |
       **${other_parties[0].name_full()}'s address:**
       ${other_parties[0].address.on_one_line(bare=True)}
+  - Edit: is_consumer_debt
+    button: |
+      **Was the judgment for consumer debt?**
+      ${word(yesno(is_consumer_debt))}
   - Edit: judgment_amount
     button: |
       **Original judgment amount:**
@@ -1792,22 +1888,34 @@ review:
       % else:
       * Time: None entered
       % endif
-      % if hearing_type == "person":
+      % if hearing_type['person'] and not hearing_type['remote']:
       * Type: In person
+      % elif hearing_type['remote'] and not hearing_type['person']:
+      * Type: By phone or video
+      % elif hearing_type['remote'] and hearing_type['person']:
+      * Type: In person or by phone or video
+      % else:
+      * Type: None entered
+      % endif
       % if courtroom != "":
       * Courtroom: ${courtroom}
       % else:
       * Courtroom: None entered
       % endif
-      % elif hearing_type == "remote":
-      * Type: By phone or video
-      % if remote_instructions != "":
-      * Instructions for attending: ${remote_instructions}
-      % else:
-      * Instructions for attending: None entered
+      % if hearing_type['remote'] and remote_website != "":
+      * Video conference website (URL): ${remote_website}
+      % elif hearing_type['remote']:
+      * Video conference website (URL): None entered
       % endif
-      % else:
-      * Type: None entered
+      % if hearing_type['remote'] and remote_login != "":
+      * Log-in information: ${remote_login}
+      % elif hearing_type['remote']:
+      * Log-in information: None entered
+      % endif
+      % if hearing_type['remote'] and remote_phone != "":
+      * Call-in phone number: ${ phone_number_formatted(remote_phone) }
+      % elif hearing_type['remote']:
+      * Call-in phone number: None entered
       % endif
   - note: |
       <h4>Debtor, bank, and employer</h4>
@@ -1835,6 +1943,16 @@ review:
     button: |
       **Last 4 digits of ${other_parties[0].name_full()}'s Social Security Number:**
       ${other_parties[0].ssn}
+    show if: collection_source["Bank"]
+  - Edit: any_debtor_docs
+    button: |
+      % if any_debtor_docs:
+      **What specific documents should ${bank.name_full()} bring to court?**
+      ${debtor_docs}
+      % else:
+      **Do you want ${bank.name_full()} to bring specific documents to court?** 
+      No
+      % endif
     show if: collection_source["Bank"]
   - Edit: employer.name.first
     button: |

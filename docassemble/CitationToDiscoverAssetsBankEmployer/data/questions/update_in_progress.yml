@@ -1,0 +1,38 @@
+metadata:
+  title: Collect a judgment from debtor's bank or employer
+  short title: Collect from bank or employer
+  comment: This Easy Form helps you make forms to collect on a money judgment from a debtor's bank or employe
+  authors:
+    - Vivian McNaughton
+---
+include:
+  - docassemble.AssemblyLine:assembly_line.yml
+  - docassemble.ILAO:ilao-interview-framework.yml
+  - docassemble.ILAO:shared-basic-questions.yml
+---
+code: |
+  ilao_easy_form_title = "Collect a judgment from debtor's bank or employer"
+  ilao_easy_form_url = "https://www.illinoislegalaid.org/legal-information/collect-judgment-debtors-bank-or-employer"
+  github_user = 'IllinoisLegalAidOnline'
+  github_repo_name = 'docassemble-CitationToDiscoverAssetsBankEmployer'
+  allowed_courts = ['Circuit']
+  al_form_type = 'existing_case'
+  form_name = "Citation to Discover Assets to Bank or Employer"
+---
+mandatory: True
+code: |
+  nav.set_section('section_intro')
+  dev_notice
+---
+id: dev notice
+event: dev_notice
+question: |
+  January 1, 2026 law change
+subquestion: |
+  A new law changes post-judgment collection in Illinois. As a result, the statewide Citation to Discover Assets forms have changed.
+  
+  ILAO is working to update this Easy Form. Until it is ready, you can find fillable PDF versions of the new forms on the [**Illinois Courts website**](https://www.illinoiscourts.gov/forms/approved-forms/forms-approved-forms-circuit-court/post-judgment-collection/).
+  
+  If you would like to talk with a lawyer about post-judgment collection, use **[Get Legal Help](https://www.illinoislegalaid.org/get-legal-help)** to find free or low-cost legal services in your area.
+  
+  We apologize for the inconvenience.
