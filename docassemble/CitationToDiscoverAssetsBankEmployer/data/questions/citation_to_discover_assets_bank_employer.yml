@@ -427,11 +427,12 @@ content: |
   If you had a judgment of $1,000 two years ago, and it was not for consumer debt, the simple interest rate would be 9%. You would multiply $1,000 x 9% to get $90 for each year. That would bring the interest to a total of $180. That's the amount of interest you can ask for in your citation.
   % endif
 ---
-depends on:
-  - already_paid_amount
-  - interest_amount
-  - court_costs
-  - judgment_amount
+#depends on:
+#  - already_paid_amount
+#  - interest_amount
+#  - court_costs
+#  - judgment_amount
+reconsider: True
 code: |
   amount_still_owed_default = (judgment_amount + court_costs + interest_amount) - already_paid_amount
 ---
