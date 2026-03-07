@@ -1090,26 +1090,26 @@ question: |
   Next steps
 subquestion: |
   % if collection_source["Bank"] and bank.in_illinois and collection_source["Employer"] and employer.in_illinois:
-   1. After you download your forms, you will need to file them with the Circuit Clerk's office in ${end_in_county(trial_court.address.county)}. This program **does not file** your forms for you. 
+   1. After you download your forms, you will need to file them with the Circuit Clerk's office in ${end_in_county(trial_court.address.county)}. This program **does not file** your forms for you. The Circuit Clerk will schedule a court date to hear your citation. This court date may be in person, by phone, or by video. 
 
   2. You must serve copies of the forms to ${name_or_agent(bank)} and ${name_or_agent(employer)}. You can have the sheriff or special process server serve the forms to ${name_or_agent(bank)} and ${name_or_agent(employer)}, or you can mail the forms to them by certified mail or registered mail. Learn more about [**certified mail**](https://faq.usps.com/s/article/Certified-Mail-The-Basics).
 
-  3. You must mail copies of the forms to ${other_parties[0].name_full()} by first-class mail. You need to mail these copies within 3 days of ${name_or_agent(bank)} and ${name_or_agent(employer)} being served. **Important:** you should wait to serve ${other_parties[0].name_full()} until you are certain ${name_or_agent(bank)} has been served. Otherwise, ${other_parties[0].name_full()} may withdraw their funds.
+  3. You must mail copies of the forms to ${other_parties[0].name_full()} by first-class mail. You need to mail these copies within 3 days of ${name_or_agent(bank)} and ${name_or_agent(employer)} being served. **Important:** you should wait to serve ${other_parties[0].name_full()} until you are certain ${name_or_agent(bank)} has been served. Otherwise, ${other_parties[0].name_full()} may try to withdraw their funds.
   % elif collection_source["Bank"] and bank.in_illinois:
-  1. After you download your forms, you will need to file them with the Circuit Clerk's office in ${end_in_county(trial_court.address.county)}. This program **does not file** your forms for you. 
+  1. After you download your forms, you will need to file them with the Circuit Clerk's office in ${end_in_county(trial_court.address.county)}. This program **does not file** your forms for you. The Circuit Clerk will schedule a court date to hear your citation. This court date may be in person, by phone, or by video. 
 
   2. You must serve copies of the forms to ${name_or_agent(bank)}. You can have the sheriff or special process server serve the forms to ${name_or_agent(bank)}, or you can mail the forms to them by certified mail or registered mail. Learn more about [**certified mail**](https://faq.usps.com/s/article/Certified-Mail-The-Basics).
 
-  3. You must mail copies of the forms to ${other_parties[0].name_full()} by first-class mail. You need to mail these copies within 3 days of ${name_or_agent(bank)} being served. **Important:** you should wait to serve ${other_parties[0].name_full()} until you are certain ${name_or_agent(bank)} has been served. Otherwise, ${other_parties[0].name_full()} may withdraw their funds.
+  3. You must mail copies of the forms to ${other_parties[0].name_full()} by first-class mail. You need to mail these copies within 3 days of ${name_or_agent(bank)} being served. **Important:** you should wait to serve ${other_parties[0].name_full()} until you are certain ${name_or_agent(bank)} has been served. Otherwise, ${other_parties[0].name_full()} may try to withdraw their funds.
   % elif collection_source["Employer"] and employer.in_illinois:
-  1. After you download your forms, you will need to file them with the Circuit Clerk's office in ${end_in_county(trial_court.address.county)}. This program **does not file** your forms for you. 
+  1. After you download your forms, you will need to file them with the Circuit Clerk's office in ${end_in_county(trial_court.address.county)}. This program **does not file** your forms for you. The Circuit Clerk will schedule a court date to hear your citation. This court date may be in person, by phone, or by video. 
 
   2. You must serve copies of the forms to ${name_or_agent(employer)}. You can have the sheriff or special process server serve the forms to ${name_or_agent(employer)}, or you can mail the forms to them by certified mail or registered mail. Learn more about [**certified mail**](https://faq.usps.com/s/article/Certified-Mail-The-Basics).
 
   3. You must mail copies of the forms to ${other_parties[0].name_full()} by first-class mail. You need to mail these copies within 3 days of ${name_or_agent(employer)} being served.
   % endif
   
-  4. The Circuit Clerk will schedule a court date to hear your citation. This court date may be in person, by phone, or by video. Bring any documents you need to the court date. 
+  4. You must attend the court date given by the Circuit Clerk. Bring any documents you need to the court date. 
   
   **Reminder:** Filing forms, scheduling court dates, and giving notice are done differently depending on where you live. You may need to ask your local Circuit Clerk for details. To learn more, read the instructions you download on an upcoming screen.  
 ---
@@ -1689,7 +1689,7 @@ review:
       ${case_number} 
   - Edit: hearing_date
     button: |
-      **Answer deadline and hearing information:**
+      **Court hearing information:**
       
       % if hearing_date != "":
       * Date: ${hearing_date}
@@ -1814,7 +1814,7 @@ review:
     show if: collection_source["Employer"]
   - Edit: hearing_date
     button: |
-      **Answer deadline and hearing information:**
+      **Court hearing information:**
       
       % if hearing_date != "":
       * Date: ${hearing_date}
@@ -2037,7 +2037,7 @@ review:
       ${case_number} 
   - Edit: hearing_date
     button: |
-      **Answer deadline and hearing information:**
+      **Court hearing information:**
       
       % if hearing_date != "":
       * Date: ${hearing_date}
