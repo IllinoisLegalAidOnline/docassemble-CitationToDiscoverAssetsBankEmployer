@@ -355,6 +355,8 @@ content: |
   * Fix something for themself, their family, or their house.
   
   If the ${judgment_date} judgment came from a case regarding a debt like that, you may need to click **Yes** here.
+
+  Medical bills, legal fees, and business loans are **not** consumer debt.
 ---
 id: wait note
 continue button field: wait_note
@@ -847,7 +849,7 @@ subquestion: |
 
   You **can not** serve the forms in person yourself. You can have a sheriff, process server, or an adult who is not part of the case serve the forms, or you can send them by certified mail.
 
-  You may be able to find the name of ${employer.name_full()}'s officer or agent on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch).
+  You may be able to find the name of ${employer.name_full()}'s officer or agent on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/).
 
   This program will make an optional *Letter to the Sheriff* for you. If you are unable to give your forms to the sheriff in person, you can send the forms with this letter to the sheriff in the county where ${employer.name_full()} or their agent is. Before you send it you will need to make sure all the names and addresses are correct, include money or a waiver for the cost of service, and sign your name.
 terms:
@@ -866,7 +868,7 @@ subquestion: |
 
   You **can not** serve the forms in person yourself. You can have a sheriff, process server, or an adult who is not part of the case serve the forms, or you can send them by certified mail.
 
-  You may be able to find the name of ${bank.name_full()}'s officer or agent on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch). You do not need to know which branch ${other_parties[0].name_full()} used.
+  You may be able to find the name of ${bank.name_full()}'s officer or agent on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/). You do not need to know which branch ${other_parties[0].name_full()} used.
 
   This program will make an optional *Letter to the Sheriff* for you. If you are unable to give your forms to the sheriff in person, you can send the forms with this letter to the sheriff in the county where ${bank.name_full()}, their agent, or their officer is. Before you send it you will need to make sure all the names and addresses are correct, include money or a waiver for the cost of service, and sign your name.
 terms:
@@ -877,7 +879,7 @@ id: bank agent name
 question: |
   Do you know the name of ${bank.name.first}'s officer or agent?
 subquestion: |
-  You may be able to find the name of ${bank.name_full()}'s officer or agent on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch).
+  You may be able to find the name of ${bank.name_full()}'s officer or agent on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/).
   
   If you are not certain which officer or agent you will serve, click **No**.
 fields:
@@ -904,7 +906,7 @@ id: employer agent name
 question: |
   Do you know the name of ${employer.name.first}'s officer or agent?
 subquestion: |
-  You may be able to find the name of ${employer.name_full()}'s officer or agent on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch).
+  You may be able to find the name of ${employer.name_full()}'s officer or agent on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/).
   
   If you are not certain which officer or agent you will serve, click **No**.
 fields:
@@ -1147,19 +1149,19 @@ content: |
 
   A sheriff can serve your forms on ${employer.name_full()} if they are a person, or on an officer or registered agent of ${employer.name_full()} if they are a company. You should send the letter to the sheriff of the county ${employer.name_full()} or their agent are in.
 
-  You may be able to find the name of a company's agent or officer on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch). 
+  You may be able to find the name of a company's agent or officer on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/). 
 
   % elif collection_source["Bank"] and bank.in_illinois:
   A sheriff can serve your forms on an officer at any of ${bank.name.first}'s branch offices or a registered agent of ${bank.name.first}. You should send the letter to the sheriff of the county the officer or agent are in.
 
   A bank's officer is an employee who is allowed to sign documents for the bank. Executives, branch managers, and assistant managers are usually officers.
 
-  You may be able to find the name of ${bank.name_full()}'s officer or agent on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch). 
+  You may be able to find the name of ${bank.name_full()}'s officer or agent on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/). 
       
   % elif collection_source["Employer"] and employer.in_illinois:
   A sheriff can serve your forms on ${employer.name_full()} if they are a person, or on an officer or registered agent of ${employer.name_full()} if they are a company. You should send the letter to the sheriff of the county the ${employer.name_full()}, their agent, or their officer are in.
 
-  You may be able to find the name of ${employer.name_full()}'s agent or officer on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/businessentitysearch).
+  You may be able to find the name of ${employer.name_full()}'s agent or officer on the [**Illinois Secretary of State's website**](https://apps.ilsos.gov/businessentitysearch/).
   % endif
 ---
 id: forms assembling
