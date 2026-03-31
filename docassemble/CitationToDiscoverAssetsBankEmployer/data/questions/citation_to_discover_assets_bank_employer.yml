@@ -356,7 +356,7 @@ content: |
   
   If the ${judgment_date} judgment came from a case regarding a debt like that, you may need to click **Yes** here.
 
-  Medical bills, legal fees, and business loans are **not** consumer debt.
+  Medical bills, legal fees, and business loans **are not consumer debt**.
 ---
 id: wait note
 continue button field: wait_note
